@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Election Compass | Learning Paths{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <p class="eyebrow">Learning Paths</p>
+    <h1 class="section-heading page-title">Choose a guided way into the election process.</h1>
+    <p class="section-copy">Each path starts from a different user need and can open the assistant with the right context already prepared.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="path-grid paths-page-grid">
+      <a class="path-card clickable-card reveal" href="{{ url_for('assistant_page', topic='overview', question='Give me a full overview of the election process') }}">
+        <span class="path-step">Path 1</span>
+        <h3>Understand the Full Election Process</h3>
+        <p>Start with the big picture, then branch into stages, timeline, or results only when you need more depth.</p>
+        <div class="path-note">Strong first entry point</div>
+      </a>
+
+      <a class="path-card clickable-card reveal delay-1" href="{{ url_for('assistant_page', topic='stages', question='Walk me through the election stages one by one') }}">
+        <span class="path-step">Path 2</span>
+        <h3>Explore the Stages One by One</h3>
+        <p>Move through the process sequentially in a more instructional, step-by-step format.</p>
+        <div class="path-note">Best for structured learning</div>
+      </a>
+
+      <a class="path-card clickable-card reveal delay-2" href="{{ url_for('assistant_page', topic='timeline', question='Show me the election timeline in order') }}">
+        <span class="path-step">Path 3</span>
+        <h3>View the Election Timeline</h3>
+        <p>Understand how the phases usually unfold before voting, on voting day, and afterward.</p>
+        <div class="path-note">Best for sequence clarity</div>
+      </a>
+
+      <a class="path-card clickable-card reveal delay-3" href="{{ url_for('assistant_page', topic='voting_day', question='Explain what happens on voting day') }}">
+        <span class="path-step">Path 4</span>
+        <h3>Learn What Happens on Voting Day</h3>
+        <p>Focus on the practical experience of check-in, voting flow, assistance, and ballot submission.</p>
+        <div class="path-note">Useful for focused questions</div>
+      </a>
+
+      <a class="path-card clickable-card reveal delay-3" href="{{ url_for('assistant_page', topic='results', question='Help me understand results and post-voting steps') }}">
+        <span class="path-step">Path 5</span>
+        <h3>Understand Results and Post-Voting Steps</h3>
+        <p>Learn why counting, reporting, and final confirmation often continue after voting day.</p>
+        <div class="path-note">Strong post-voting follow-up</div>
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

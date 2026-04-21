@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Election Compass | Home{% endblock %}
+
+{% block content %}
+<section class="hero page-hero">
+  <div class="container hero-grid">
+    <div class="hero-panel reveal compact-hero">
+      <div class="hero-copy">
+        <p class="eyebrow hero-eyebrow">Election Compass</p>
+        <h1 class="hero-title">Understand the election process with a calm, guided experience.</h1>
+        <p class="hero-subtitle">
+          Learn the sequence of stages, ask focused questions, and move through the process one clear step at a time.
+        </p>
+        <div class="hero-actions">
+          <a class="button-primary" href="{{ url_for('assistant_page') }}">Start Learning the Election Process</a>
+          <a class="button-secondary" href="{{ url_for('assistant_page') }}">Ask the Assistant</a>
+        </div>
+      </div>
+    </div>
+
+    <aside class="hero-aside">
+      <section class="hero-card reveal delay-1">
+        <div>
+          <p class="eyebrow">What You Can Do Here</p>
+          <h2>Use the assistant, or begin with a structured path.</h2>
+          <p>Election Compass is designed for people who want a simpler, more understandable view of how elections work before, during, and after voting.</p>
+        </div>
+        <ul class="mini-list">
+          <li><span class="mini-badge">01</span><span>Ask for an overview, a timeline, or a single stage.</span></li>
+          <li><span class="mini-badge">02</span><span>Browse learning paths and dedicated pages for deeper reading.</span></li>
+          <li><span class="mini-badge">03</span><span>Use follow-up suggestions to keep moving without losing context.</span></li>
+        </ul>
+      </section>
+    </aside>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="split-intro reveal">
+      <div>
+        <p class="eyebrow">Product Introduction</p>
+        <h2 class="section-heading">A civic education assistant, not a static information wall.</h2>
+      </div>
+      <p class="section-copy intro-copy">
+        The app helps users understand election overview, stages, timelines, registration context, voting day flow, and results in a neutral, easy-to-follow way.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section shell-section">
+  <div class="container">
+    <div class="assistant-entry reveal">
+      <div class="assistant-entry-copy">
+        <p class="eyebrow">Assistant Entry</p>
+        <h2 class="section-heading">How can I help you understand the election process?</h2>
+        <p class="section-copy">Open the assistant to ask a question, choose a learning mode, or start from a guided topic.</p>
+      </div>
+      <div class="assistant-entry-actions">
+        <a class="button-primary" href="{{ url_for('assistant_page') }}">Open Assistant</a>
+        <div class="topic-chip-row">
+          <a class="chip" href="{{ url_for('assistant_page', topic='overview', question='What is the election process?') }}">Election Overview</a>
+          <a class="chip" href="{{ url_for('assistant_page', topic='stages', question='Explain the election stages one by one') }}">Process Stages</a>
+          <a class="chip" href="{{ url_for('assistant_page', topic='timeline', question='Show me the election timeline') }}">Timeline</a>
+          <a class="chip" href="{{ url_for('assistant_page', topic='voting_day', question='What happens on voting day?') }}">Voting Day</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <p class="eyebrow">Quick Access</p>
+    <h2 class="section-heading">Choose where to go next.</h2>
+    <div class="quick-grid">
+      <a class="quick-card reveal" href="{{ url_for('assistant_page') }}">
+        <span class="stage-index">01</span>
+        <h3>Assistant</h3>
+        <p>Ask a question, pick a response style, and get follow-up suggestions.</p>
+      </a>
+      <a class="quick-card reveal delay-1" href="{{ url_for('paths_page') }}">
+        <span class="stage-index">02</span>
+        <h3>Learning Paths</h3>
+        <p>Start from overview, stages, voting day, or post-voting steps.</p>
+      </a>
+      <a class="quick-card reveal delay-2" href="{{ url_for('stages_page') }}">
+        <span class="stage-index">03</span>
+        <h3>Stages</h3>
+        <p>Read the election sequence in a clear step-by-step format.</p>
+      </a>
+      <a class="quick-card reveal delay-3" href="{{ url_for('timeline_page') }}">
+        <span class="stage-index">04</span>
+        <h3>Timeline</h3>
+        <p>See how the phases usually unfold from preparation to final reporting.</p>
+      </a>
+      <a class="quick-card reveal delay-3" href="{{ url_for('faq_page') }}">
+        <span class="stage-index">05</span>
+        <h3>FAQ</h3>
+        <p>Open concise answers to the most common questions and confusion points.</p>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="section recap-section">
+  <div class="container">
+    <div class="preview-band reveal">
+      <div>
+        <p class="eyebrow">Preview</p>
+        <h2>One product, multiple ways to learn.</h2>
+        <p>The homepage now stays focused. Deeper content lives in dedicated pages so the experience feels structured and easy to navigate.</p>
+      </div>
+      <a class="button-ghost" href="{{ url_for('paths_page') }}">Browse Learning Paths</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

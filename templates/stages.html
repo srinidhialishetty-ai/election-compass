@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Election Compass | Stages{% endblock %}
+
+{% block content %}
+<section class="page-header page-header-stages">
+  <div class="container">
+    <p class="eyebrow">Stages</p>
+    <h1 class="section-heading page-title">Read the election process as a clean sequence of stages.</h1>
+    <p class="section-copy">This page is for users who prefer structured reading before asking the assistant for clarification or follow-up detail.</p>
+  </div>
+</section>
+
+<section class="section stages-section">
+  <div class="container">
+    <div class="process-grid stages-page-grid">
+      <article class="process-card reveal">
+        <span class="stage-index">01</span>
+        <h3>Preparation / Pre-Election Context</h3>
+        <p>Authorities organize the election, announce procedures, and prepare the conditions needed for participation.</p>
+      </article>
+      <article class="process-card reveal delay-1">
+        <span class="stage-index">02</span>
+        <h3>Registration / Eligibility Context</h3>
+        <p>Eligible voters confirm whether they can participate and whether any deadlines or requirements apply.</p>
+      </article>
+      <article class="process-card reveal delay-2">
+        <span class="stage-index">03</span>
+        <h3>Campaign / Candidate Phase</h3>
+        <p>People gather information, compare options, and follow official notices before ballots are cast.</p>
+      </article>
+      <article class="process-card reveal delay-3">
+        <span class="stage-index">04</span>
+        <h3>Voting Day</h3>
+        <p>Voters complete the official process to cast ballots, often including check-in and instructions.</p>
+      </article>
+      <article class="process-card reveal delay-3">
+        <span class="stage-index">05</span>
+        <h3>Counting and Results</h3>
+        <p>Votes are counted and reported before official results are finalized through the proper process.</p>
+      </article>
+      <article class="process-card reveal delay-3">
+        <span class="stage-index">06</span>
+        <h3>Post-Election Outcome</h3>
+        <p>Final certification or confirmation closes the process and formally records the result.</p>
+      </article>
+    </div>
+
+    <div class="inline-cta reveal">
+      <div>
+        <p class="eyebrow">Need clarification?</p>
+        <h2>Ask the assistant to expand any stage in simple language.</h2>
+      </div>
+      <a class="button-primary" href="{{ url_for('assistant_page', topic='stages', question='Explain the election stages one by one') }}">Open Assistant with Stages</a>
+    </div>
+  </div>
+</section>
+{% endblock %}

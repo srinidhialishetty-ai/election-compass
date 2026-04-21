@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block title %}Election Compass | Assistant{% endblock %}
+
+{% block content %}
+<section class="page-header">
+  <div class="container">
+    <p class="eyebrow">Assistant</p>
+    <h1 class="section-heading page-title">Ask about the election process in the format that helps most.</h1>
+    <p class="section-copy">Choose a learning mode, change the response style, and keep moving with suggested follow-up questions.</p>
+  </div>
+</section>
+
+<section class="section shell-section" id="assistant">
+  <div class="container">
+    <div class="assistant-shell reveal">
+      <div class="assistant-grid">
+        <div class="assistant-panel">
+          <div class="assistant-toolbar">
+            <div>
+              <label class="control-label" for="mode-select">Learning Mode</label>
+              <select id="mode-select" class="select-control">
+                <option value="quick">Quick Overview</option>
+                <option value="step">Step-by-Step Learning</option>
+                <option value="ask">Ask Anything</option>
+              </select>
+            </div>
+            <div>
+              <label class="control-label" for="style-select">Response Style</label>
+              <select id="style-select" class="select-control">
+                <option value="simple">Simple Language</option>
+                <option value="detailed">Detailed Explanation</option>
+                <option value="timeline">Timeline Format</option>
+              </select>
+            </div>
+          </div>
+
+          <form id="assistant-form" class="assistant-form">
+            <label class="control-label" for="assistant-input">Ask your question</label>
+            <div class="input-row">
+              <input
+                id="assistant-input"
+                name="assistant-input"
+                type="text"
+                autocomplete="off"
+                placeholder="Try: What happens after voting day?"
+                value="{{ initial_question }}"
+              >
+              <button class="button-primary button-submit" type="submit">Ask</button>
+            </div>
+
+            <div class="topic-chip-row" aria-label="Quick topics">
+              <button class="chip {% if initial_topic == 'overview' %}active{% endif %}" type="button" data-topic="overview" data-question="What is the election process?">Election Overview</button>
+              <button class="chip {% if initial_topic == 'stages' %}active{% endif %}" type="button" data-topic="stages" data-question="Explain the election stages one by one">Process Stages</button>
+              <button class="chip {% if initial_topic == 'timeline' %}active{% endif %}" type="button" data-topic="timeline" data-question="Show me the election timeline">Timeline</button>
+              <button class="chip {% if initial_topic == 'registration' %}active{% endif %}" type="button" data-topic="registration" data-question="Explain registration basics">Registration Basics</button>
+              <button class="chip {% if initial_topic == 'voting_day' %}active{% endif %}" type="button" data-topic="voting_day" data-question="What happens on voting day?">Voting Day</button>
+              <button class="chip {% if initial_topic == 'results' %}active{% endif %}" type="button" data-topic="results" data-question="How are votes counted and results reported?">Counting &amp; Results</button>
+              <button class="chip" type="button" data-topic="overview" data-question="Explain the election process simply">Explain Simply</button>
+              <button class="chip" type="button" data-topic="faq" data-question="What should I ask next about the election process?">Ask Follow-up</button>
+            </div>
+
+            <div class="helper-actions">
+              <button class="button-ghost" type="button" id="explain-new-btn">Explain like I'm new</button>
+              <button class="button-ghost" type="button" id="copy-response-btn">Copy response</button>
+            </div>
+          </form>
+
+          <div class="assistant-output">
+            <div class="response-meta">
+              <span class="response-status" id="response-status">Ready to guide</span>
+              <span class="response-context" id="response-context">Current focus: {{ initial_topic.replace('_', ' ')|title }}</span>
+            </div>
+
+            <article class="response-card" id="response-card" aria-live="polite">
+              <h3>Welcome</h3>
+              <p>
+                Start with a question like "What is the election process?", "Explain voting day", or "Show me the timeline." Exact dates and requirements can vary depending on official election authorities, but this app explains the overall process clearly and neutrally.
+              </p>
+            </article>
+
+            <div class="next-rail">
+              <p class="control-label next-label">Suggested Next Questions</p>
+              <div id="next-questions" class="topic-chip-row">
+                <button class="chip suggestion-chip" type="button">Explain the stages one by one</button>
+                <button class="chip suggestion-chip" type="button">Show me the election timeline</button>
+                <button class="chip suggestion-chip" type="button">What happens on voting day?</button>
+                <button class="chip suggestion-chip" type="button">Give me a quick recap</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <aside class="assistant-side">
+          <div class="progress-card">
+            <p class="eyebrow">Learning Progress</p>
+            <div class="progress-list" id="progress-list">
+              <div class="progress-item is-active" data-progress-key="started">
+                <span class="progress-dot"></span>
+                <span>Started</span>
+              </div>
+              <div class="progress-item" data-progress-key="overview_learned">
+                <span class="progress-dot"></span>
+                <span>Overview learned</span>
+              </div>
+              <div class="progress-item" data-progress-key="stages_explored">
+                <span class="progress-dot"></span>
+                <span>Stages explored</span>
+              </div>
+              <div class="progress-item" data-progress-key="timeline_understood">
+                <span class="progress-dot"></span>
+                <span>Timeline understood</span>
+              </div>
+              <div class="progress-item" data-progress-key="recap_completed">
+                <span class="progress-dot"></span>
+                <span>Recap completed</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="note-card">
+            <p class="eyebrow">Current Topic</p>
+            <p>Use this page as the main interactive workspace. The rest of the site now supports it with cleaner, dedicated reading pages.</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.ELECTION_COMPASS_INITIAL = {
+    topic: "{{ initial_topic }}",
+    question: {{ initial_question|tojson }}
+  };
+</script>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+{% endblock %}
