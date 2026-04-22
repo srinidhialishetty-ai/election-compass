@@ -218,11 +218,15 @@ def create_app() -> Flask:
         "faq": "faq",
     }
 
+    PROCESS_ORDER = ["overview", "registration", "stages", "voting_day", "results", "timeline"]
+
     def initialize_session_state() -> None:
         session.setdefault("current_topic", "overview")
         session.setdefault("mode", "quick")
         session.setdefault("style", "simple")
+        session.setdefault("last_interaction_source", "manual")
         session.setdefault("history", [])
+        session.setdefault("visited_topics", [])
         session.setdefault(
             "progress",
             {
@@ -256,13 +260,12 @@ def create_app() -> Flask:
             return "faq"
         return "overview"
 
-    def build_local_answer(question: str, topic: str, mode: str, style: str) -> dict:
-        guide = TOPIC_GUIDES.get(topic, TOPIC_GUIDES["overview"])
+    def mark_topic_visit(topic: str) -> tuple[dict, list[str]]:
         progress = session.get("progress", {}).copy()
-        question_lc = (question or "").lower()
+        visited_topics = list(session.get("visited_topics", []))
 
-        if "recap" in question_lc:
-            progress["recap_completed"] = True
+        if topic not in visited_topics:
+            visited_topics.append(topic)
 
         if topic == "overview":
             progress["overview_learned"] = True
@@ -271,39 +274,173 @@ def create_app() -> Flask:
         if topic in {"timeline", "results"}:
             progress["timeline_understood"] = True
 
-        if style == "timeline":
-            answer_body = guide["timeline"]
-        elif style == "detailed" or mode == "step":
-            answer_body = " ".join(guide["details"])
-        elif "simple" in question_lc or style == "simple":
-            answer_body = guide["simple"]
+        return progress, visited_topics
+
+    def suggest_next_topics(topic: str, visited_topics: list[str]) -> list[str]:
+        topic_routes = {
+            "overview": ["stages", "timeline", "registration", "results"],
+            "stages": ["registration", "voting_day", "timeline", "results"],
+            "timeline": ["stages", "voting_day", "results", "overview"],
+            "registration": ["stages", "voting_day", "timeline", "results"],
+            "voting_day": ["results", "timeline", "stages", "overview"],
+            "results": ["timeline", "overview", "stages", "faq"],
+            "faq": ["overview", "timeline", "stages", "results"],
+        }
+        next_topics = topic_routes.get(topic, ["overview", "stages", "timeline", "results"])
+        unvisited = [item for item in next_topics if item not in visited_topics]
+        ordered = unvisited + [item for item in next_topics if item in visited_topics]
+        return ordered[:4]
+
+    def build_suggestions(
+        topic: str,
+        progress: dict,
+        visited_topics: list[str],
+        last_topic: str | None,
+    ) -> list[str]:
+        suggestion_bank = {
+            "overview": {
+                "stages": "Walk me through the stages one by one",
+                "timeline": "Show me the election timeline next",
+                "registration": "Explain registration and eligibility",
+                "results": "What happens after votes are cast?",
+                "faq": "Give me a quick recap",
+            },
+            "stages": {
+                "registration": "Explain the registration stage",
+                "voting_day": "What happens on voting day?",
+                "timeline": "Place these stages on a timeline",
+                "results": "What follows after voting day?",
+                "overview": "Give me the overall process again",
+            },
+            "timeline": {
+                "stages": "Break that timeline into stages",
+                "voting_day": "Focus only on voting day",
+                "results": "What happens after voting closes?",
+                "overview": "Give me the big-picture version",
+                "faq": "Summarize this more simply",
+            },
+            "registration": {
+                "stages": "What stage comes after registration?",
+                "voting_day": "Explain what happens on voting day",
+                "timeline": "Where does registration fit in the timeline?",
+                "results": "What happens after voting?",
+                "overview": "Return to the full process overview",
+            },
+            "voting_day": {
+                "results": "Explain counting and results next",
+                "timeline": "Show where voting day sits in the timeline",
+                "stages": "What stage comes after voting day?",
+                "overview": "Summarize the full process for me",
+                "faq": "Make this simpler",
+            },
+            "results": {
+                "timeline": "Show the full timeline again",
+                "overview": "Return to the big-picture explanation",
+                "stages": "Which stage leads into results?",
+                "faq": "Why can results take time?",
+                "registration": "Start earlier in the process",
+            },
+            "faq": {
+                "overview": "What is the election process?",
+                "timeline": "How do I understand the timeline more easily?",
+                "stages": "Why are there multiple stages?",
+                "results": "What happens after votes are cast?",
+                "registration": "What happens before voting day?",
+            },
+        }
+
+        route_order = suggest_next_topics(topic, visited_topics)
+        topic_map = suggestion_bank.get(topic, suggestion_bank["overview"])
+        suggestions = [topic_map[item] for item in route_order if item in topic_map]
+
+        if last_topic and last_topic != topic:
+            revisit_prompt = f"Compare this with {TOPIC_GUIDES[last_topic]['title'].lower()}"
+            if revisit_prompt not in suggestions:
+                suggestions.append(revisit_prompt)
+
+        if progress.get("recap_completed") is False:
+            recap_prompt = "Give me a short recap"
+            if recap_prompt not in suggestions:
+                suggestions.append(recap_prompt)
+
+        unique = []
+        for item in suggestions:
+            if item not in unique:
+                unique.append(item)
+            if len(unique) == 4:
+                break
+        return unique
+
+    def build_local_answer(
+        question: str,
+        topic: str,
+        mode: str,
+        style: str,
+        interaction_source: str,
+        last_topic: str | None,
+    ) -> dict:
+        guide = TOPIC_GUIDES.get(topic, TOPIC_GUIDES["overview"])
+        question_lc = (question or "").lower()
+        progress, visited_topics = mark_topic_visit(topic)
+
+        if "recap" in question_lc:
+            progress["recap_completed"] = True
+
+        effective_style = style
+        if interaction_source == "manual" and style == "simple":
+            effective_style = "detailed"
+        if interaction_source in {"chip", "suggestion"} and style == "detailed":
+            effective_style = "simple"
+        if interaction_source == "explain_new":
+            effective_style = "simple"
+
+        if effective_style == "timeline":
+            bullets = [
+                "Preparation establishes the rules, timeline, and logistics.",
+                "Registration and eligibility checks happen before participation.",
+                "Voting day follows the public information phase.",
+                "Counting and reporting continue after ballots are cast.",
+            ]
+        elif effective_style == "detailed" or mode == "step":
+            bullets = guide["details"][:4]
         else:
-            answer_body = guide["summary"]
+            bullets = guide["details"][:3]
 
-        intro = f"{guide['title']}: "
-        answer = f"{intro}{answer_body}"
-
-        if mode == "ask":
-            answer += " If you want, you can follow up on a specific phase and I can stay focused on just that part."
-        elif mode == "step":
-            answer += " This is part of a step-by-step path, so the next useful move is to continue to the following stage."
+        clarification = guide["timeline"] if effective_style == "timeline" else guide["simple"]
+        if interaction_source == "suggestion" and last_topic and last_topic != topic:
+            clarification += f" This follows naturally from your previous question about {TOPIC_GUIDES[last_topic]['title'].lower()}."
 
         if "confused" in question_lc:
-            answer = (
-                "Here is the simplest version first: elections usually involve getting ready, confirming who can vote, "
-                "voting, and then counting the ballots before results are made official. "
-                + answer_body
-            )
+            bullets = [
+                "First, the election is prepared and explained.",
+                "Next, voters confirm participation requirements.",
+                "Then ballots are cast, counted, and officially reported.",
+            ]
+            clarification = "In the simplest terms, elections move from preparation to voting and then to counting and confirmation."
 
-        suggestions = guide["suggestions"][:]
+        example = None
+        if topic == "timeline":
+            example = "Example sequence: public notice -> registration checkpoint -> voting day -> counting -> official reporting."
+        elif topic == "voting_day":
+            example = "Example: a voter arrives, checks in, follows instructions, and then submits a ballot."
+        elif topic == "results":
+            example = "Example: early reports may appear before final confirmation is complete."
+
+        suggestions = build_suggestions(topic, progress, visited_topics, last_topic)
         section = SECTION_MAP.get(topic, "assistant")
 
         return {
-            "answer": answer,
+            "heading": guide["title"],
+            "answer": guide["summary"],
+            "bullets": bullets,
+            "clarification": clarification,
+            "example": example,
             "topic": topic,
             "recommended_section": section,
             "suggestions": suggestions,
             "progress": progress,
+            "visited_topics": visited_topics,
+            "suggested_next_topic": suggest_next_topics(topic, visited_topics)[0] if suggest_next_topics(topic, visited_topics) else topic,
             "used_fallback": True,
             "source": "local_fallback",
         }
@@ -316,12 +453,13 @@ def create_app() -> Flask:
             "Keep explanations accurate at a general civic-process level and avoid overclaiming exact local rules or live dates. "
             "When relevant, note that exact dates and requirements depend on official election authorities. "
             "Return valid JSON only with this schema: "
-            '{"answer":"string","topic":"one of overview|stages|timeline|registration|voting_day|results|faq",'
+            '{"heading":"string","answer":"string","bullets":["string"],"clarification":"string","example":"string or empty",'
+            '"topic":"one of overview|stages|timeline|registration|voting_day|results|faq",'
             '"recommended_section":"assistant or process or timeline or faq or recap",'
             '"suggestions":["string","string","string","string"]}.'
         )
 
-    def build_user_prompt(question: str, topic: str, mode: str, style: str) -> str:
+    def build_user_prompt(question: str, topic: str, mode: str, style: str, interaction_source: str) -> str:
         history = session.get("history", [])[-3:]
         history_text = "\n".join(
             f"User: {entry['question']}\nAssistant topic: {entry['topic']}"
@@ -333,11 +471,14 @@ def create_app() -> Flask:
             f"Current topic focus: {topic}\n"
             f"Learning mode: {mode}\n"
             f"Response style: {style}\n"
+            f"Interaction source: {interaction_source}\n"
             f"Recent session context:\n{history_text}\n\n"
             f"User question: {question}\n\n"
             "Instructions:\n"
             "- Make the answer readable and useful for first-time learners.\n"
-            "- Prefer short paragraphs or a compact structured explanation.\n"
+            "- Return a short heading, 3 to 4 bullet points, a short clarification, and an optional example.\n"
+            "- If the interaction source is chip or suggestion, keep the explanation concise.\n"
+            "- If the interaction source is manual, allow slightly more detail.\n"
             "- If the user sounds confused, simplify first.\n"
             "- If the user asks about timeline, explain phases in order.\n"
             "- If the user asks about voting day, focus on that phase only.\n"
@@ -347,7 +488,7 @@ def create_app() -> Flask:
             "- Mention that exact dates or requirements may vary by official election authority when helpful."
         )
 
-    def call_gemini(question: str, topic: str, mode: str, style: str) -> dict:
+    def call_gemini(question: str, topic: str, mode: str, style: str, interaction_source: str) -> dict:
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise RuntimeError("Missing GEMINI_API_KEY")
@@ -367,7 +508,7 @@ def create_app() -> Flask:
             "contents": [
                 {
                     "role": "user",
-                    "parts": [{"text": build_user_prompt(question, topic, mode, style)}],
+                    "parts": [{"text": build_user_prompt(question, topic, mode, style, interaction_source)}],
                 }
             ],
             "generationConfig": {
@@ -418,6 +559,7 @@ def create_app() -> Flask:
         if topic not in TOPIC_GUIDES:
             topic = "overview"
 
+        progress, visited_topics = mark_topic_visit(topic)
         suggested = data.get("suggestions") or SUGGESTED_QUESTIONS.get(topic, [])
         suggestions = [str(item).strip() for item in suggested if str(item).strip()][:4]
         while len(suggestions) < 4:
@@ -435,22 +577,29 @@ def create_app() -> Flask:
         if not answer:
             raise ValueError("Model response missing answer")
 
-        progress = session.get("progress", {}).copy()
-        if topic == "overview":
-            progress["overview_learned"] = True
-        if topic in {"stages", "registration", "voting_day"}:
-            progress["stages_explored"] = True
-        if topic in {"timeline", "results"}:
-            progress["timeline_understood"] = True
-        if "recap" in answer.lower():
+        if "recap" in answer.lower() or "recap" in str(data.get("heading", "")).lower():
             progress["recap_completed"] = True
 
+        heading = str(data.get("heading", TOPIC_GUIDES[topic]["title"])).strip() or TOPIC_GUIDES[topic]["title"]
+        bullets = [str(item).strip() for item in (data.get("bullets") or []) if str(item).strip()][:4]
+        if not bullets:
+            bullets = TOPIC_GUIDES[topic]["details"][:3]
+
+        clarification = str(data.get("clarification", TOPIC_GUIDES[topic]["simple"])).strip() or TOPIC_GUIDES[topic]["simple"]
+        example = str(data.get("example", "")).strip() or None
+
         return {
+            "heading": heading,
             "answer": answer,
+            "bullets": bullets,
+            "clarification": clarification,
+            "example": example,
             "topic": topic,
             "recommended_section": section,
-            "suggestions": suggestions,
+            "suggestions": suggestions[:4],
             "progress": progress,
+            "visited_topics": visited_topics,
+            "suggested_next_topic": suggest_next_topics(topic, visited_topics)[0] if suggest_next_topics(topic, visited_topics) else topic,
             "used_fallback": False,
             "source": "gemini",
         }
@@ -531,6 +680,7 @@ def create_app() -> Flask:
         style = str(payload.get("style", session.get("style", "simple"))).strip().lower()
         requested_topic = str(payload.get("topic", "")).strip().lower()
         explain_like_new = bool(payload.get("explain_like_new"))
+        interaction_source = str(payload.get("interaction_source", session.get("last_interaction_source", "manual"))).strip().lower()
 
         if mode not in {"quick", "step", "ask"}:
             mode = "quick"
@@ -538,19 +688,33 @@ def create_app() -> Flask:
             style = "simple"
         if explain_like_new:
             style = "simple"
+            interaction_source = "explain_new"
+        if interaction_source not in {"manual", "chip", "suggestion", "explain_new"}:
+            interaction_source = "manual"
 
         if not question:
             return (
                 jsonify(
                     {
-                        "answer": (
-                            "Start with a short question such as “What is the election process?”, "
-                            "“Explain voting day”, or “Show me the timeline.”"
-                        ),
+                        "heading": "Start here",
+                        "answer": "The assistant can explain stages, timelines, voting day, results, and common civic questions.",
+                        "bullets": [
+                            "Ask for the full election overview.",
+                            "Choose one stage such as registration or voting day.",
+                            "Request a timeline or a short recap.",
+                        ],
+                        "clarification": "Select one of the suggested prompts below or type your own question to begin.",
+                        "example": None,
                         "topic": session.get("current_topic", "overview"),
                         "recommended_section": "assistant",
-                        "suggestions": SUGGESTED_QUESTIONS["overview"],
+                        "suggestions": [
+                            "What is the election process?",
+                            "Show me the election timeline",
+                            "Explain voting day",
+                        ],
                         "progress": session.get("progress"),
+                        "visited_topics": session.get("visited_topics", []),
+                        "suggested_next_topic": session.get("current_topic", "overview"),
                         "used_fallback": True,
                         "source": "empty_state",
                         "error": "empty_question",
@@ -566,21 +730,24 @@ def create_app() -> Flask:
         session["mode"] = mode
         session["style"] = style
         session["current_topic"] = topic
+        session["last_interaction_source"] = interaction_source
+        last_topic = history[-1]["topic"] if (history := session.get("history", [])) else None
 
         try:
-            result = call_gemini(question, topic, mode, style)
+            result = call_gemini(question, topic, mode, style, interaction_source)
         except Exception:
-            result = build_local_answer(question, topic, mode, style)
+            result = build_local_answer(question, topic, mode, style, interaction_source, last_topic)
 
         session["progress"] = result["progress"]
-        history = session.get("history", [])
         history.append(
             {
                 "question": question,
                 "topic": result["topic"],
+                "mode": mode,
             }
         )
         session["history"] = history[-8:]
+        session["visited_topics"] = result.get("visited_topics", session.get("visited_topics", []))
 
         return jsonify(result)
 
@@ -593,6 +760,7 @@ def create_app() -> Flask:
                 "mode": session.get("mode", "quick"),
                 "style": session.get("style", "simple"),
                 "progress": session.get("progress"),
+                "visited_topics": session.get("visited_topics", []),
             }
         )
 

@@ -12,6 +12,7 @@ if (assistantForm) {
   const explainNewButton = document.getElementById("explain-new-btn");
   const chips = document.querySelectorAll(".chip[data-topic]");
   const progressItems = document.querySelectorAll(".progress-item");
+  const topicProgressItems = document.querySelectorAll(".topic-progress-item");
 
   const initialState = window.ELECTION_COMPASS_INITIAL || {};
 
@@ -41,17 +42,42 @@ if (assistantForm) {
     responseStatus.classList.remove("is-loading");
     responseCard.classList.remove("is-loading");
     setSuggestionLoadingState(false);
+    const bulletMarkup = (data.bullets || [])
+      .map((item) => `<li>${escapeHtml(item)}</li>`)
+      .join("");
+    const clarification = data.clarification
+      ? `<div class="response-note">${escapeHtml(data.clarification)}</div>`
+      : "";
+    const example = data.example
+      ? `<div class="response-example"><strong>Example:</strong> ${escapeHtml(data.example)}</div>`
+      : "";
+
     responseCard.innerHTML = `
-      <h3>${heading}</h3>
-      <p>${escapeHtml(data.answer)}</p>
+      <h3>${escapeHtml(data.heading || heading)}</h3>
+      <div class="response-body">
+        <p>${escapeHtml(data.answer)}</p>
+        ${bulletMarkup ? `<ul class="response-points">${bulletMarkup}</ul>` : ""}
+        ${clarification}
+        ${example}
+      </div>
     `;
 
     responseStatus.textContent = data.used_fallback ? "Fallback guidance used" : "Assistant response ready";
     responseContext.textContent = `Current focus: ${heading}`;
-    lastResponseText = `${heading}\n\n${data.answer}`;
+    lastResponseText = [
+      data.heading || heading,
+      data.answer || "",
+      ...(data.bullets || []),
+      data.clarification || "",
+      data.example ? `Example: ${data.example}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
     updateSuggestions(data.suggestions || []);
     updateProgress(data.progress || {});
+    updateVisitedTopics(data.visited_topics || [], data.suggested_next_topic || "");
     updateTopicSelection(data.topic || currentTopic);
+    responseCard.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function setSuggestionLoadingState(isLoading) {
@@ -85,26 +111,54 @@ if (assistantForm) {
     });
   }
 
+  function updateVisitedTopics(visitedTopics, nextTopic) {
+    topicProgressItems.forEach((item) => {
+      const topicKey = item.dataset.topicKey;
+      item.classList.toggle("is-visited", visitedTopics.includes(topicKey));
+      item.classList.toggle("is-next", nextTopic === topicKey && !visitedTopics.includes(topicKey));
+    });
+  }
+
   function setLoadingState(questionText, text = "Thinking through the election process...") {
     responseStatus.classList.add("is-loading");
-    responseStatus.textContent = text;
+    responseStatus.textContent = "Preparing explanation...";
     responseCard.classList.add("is-loading");
     responseCard.innerHTML = `
       <h3>Working on it</h3>
-      <p>${escapeHtml(questionText)}</p>
+      <div class="response-body">
+        <p>${escapeHtml(questionText)}</p>
+        <ul class="response-points">
+          <li>Reading the current question</li>
+          <li>Checking the last topic in session</li>
+          <li>Preparing the next guided step</li>
+        </ul>
+      </div>
     `;
     setSuggestionLoadingState(true);
+    responseCard.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  async function submitQuestion(question, topic = currentTopic, explainLikeNew = false) {
+  async function submitQuestion(question, topic = currentTopic, explainLikeNew = false, interactionSource = "manual") {
     if (!question.trim()) {
       responseStatus.classList.remove("is-loading");
       responseStatus.textContent = "Please enter a question";
       responseCard.classList.remove("is-loading");
       responseCard.innerHTML = `
-        <h3>Helpful prompt</h3>
-        <p>Try asking "What is the election process?", "Explain voting day", or "Show me the timeline."</p>
+        <h3>Choose a starting prompt</h3>
+        <div class="response-body">
+          <p>The assistant can explain the election process, break stages apart, clarify the timeline, and summarize what happens after voting.</p>
+          <ul class="response-points">
+            <li>What is the election process?</li>
+            <li>Show me the election timeline</li>
+            <li>Explain voting day</li>
+          </ul>
+        </div>
       `;
+      updateSuggestions([
+        "What is the election process?",
+        "Show me the election timeline",
+        "Explain voting day",
+      ]);
       return;
     }
 
@@ -130,6 +184,7 @@ if (assistantForm) {
           mode: modeSelect.value,
           style: styleSelect.value,
           explain_like_new: explainLikeNew,
+          interaction_source: interactionSource,
         }),
       });
 
@@ -161,8 +216,16 @@ if (assistantForm) {
       responseCard.classList.remove("is-loading");
       setSuggestionLoadingState(false);
       updateResponseUI({
+        heading: topicLabels[topic] || "Assistant Response",
         answer:
           "The live assistant is temporarily unavailable, so here is a reliable fallback: elections generally move through preparation, registration, voting, counting, and official confirmation. You can ask about any one stage next.",
+        bullets: [
+          "Preparation establishes the process.",
+          "Voting day is only one part of the sequence.",
+          "Counting and reporting follow after ballots are cast.",
+        ],
+        clarification: "You can continue by choosing one of the next-step prompts below.",
+        example: null,
         topic,
         suggestions: [
           "Explain the election overview",
@@ -188,14 +251,15 @@ if (assistantForm) {
 
   assistantForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    submitQuestion(assistantInput.value, currentTopic, false);
+    submitQuestion(assistantInput.value, currentTopic, false, "manual");
   });
 
   chips.forEach((chip) => {
     chip.addEventListener("click", () => {
+      chip.classList.add("active");
       updateTopicSelection(chip.dataset.topic);
       assistantInput.value = chip.dataset.question || chip.textContent.trim();
-      submitQuestion(assistantInput.value, chip.dataset.topic, false);
+      submitQuestion(assistantInput.value, chip.dataset.topic, false, "chip");
     });
   });
 
@@ -207,13 +271,13 @@ if (assistantForm) {
 
     const question = button.textContent.trim();
     assistantInput.value = question;
-    submitQuestion(question, currentTopic, false);
+    submitQuestion(question, currentTopic, false, "suggestion");
   });
 
   explainNewButton.addEventListener("click", () => {
     const text = assistantInput.value.trim() || "Explain the election process simply";
     assistantInput.value = text;
-    submitQuestion(text, currentTopic, true);
+    submitQuestion(text, currentTopic, true, "explain_new");
   });
 
   copyResponseButton.addEventListener("click", async () => {
@@ -240,9 +304,12 @@ if (assistantForm) {
       if (data.progress) {
         updateProgress(data.progress);
       }
+      if (data.visited_topics) {
+        updateVisitedTopics(data.visited_topics, "");
+      }
       if (initialState.question) {
         assistantInput.value = initialState.question;
-        submitQuestion(initialState.question, initialState.topic || data.current_topic || "overview", false);
+        submitQuestion(initialState.question, initialState.topic || data.current_topic || "overview", false, "manual");
       }
     })
     .catch(() => {

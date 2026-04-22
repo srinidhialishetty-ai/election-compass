@@ -937,6 +937,37 @@ button {
   color: rgba(45, 42, 38, 0.82);
 }
 
+.response-body {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.response-points {
+  margin: 0;
+  padding-left: 1.15rem;
+  display: grid;
+  gap: 0.45rem;
+  color: rgba(45, 42, 38, 0.82);
+}
+
+.response-points li {
+  line-height: 1.7;
+}
+
+.response-note {
+  padding: 0.8rem 0.9rem;
+  border-radius: 14px;
+  background: rgba(242, 237, 228, 0.78);
+  color: var(--navy-soft);
+}
+
+.response-example {
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(221, 214, 200, 0.8);
+  color: rgba(140, 115, 85, 0.96);
+  font-size: 0.92rem;
+}
+
 .response-card.is-loading {
   position: relative;
   overflow: hidden;
@@ -1002,6 +1033,34 @@ button {
 .progress-item.is-active .progress-dot,
 .progress-item.is-done .progress-dot {
   background: var(--olive);
+}
+
+.topic-progress-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.topic-progress-item {
+  padding: 0.62rem 0.78rem;
+  border-radius: 999px;
+  border: 1px solid rgba(207, 196, 176, 0.92);
+  background: rgba(245, 240, 232, 0.9);
+  color: rgba(31, 43, 61, 0.72);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.topic-progress-item.is-visited {
+  background: rgba(223, 229, 212, 0.9);
+  border-color: rgba(110, 123, 91, 0.46);
+  color: var(--navy);
+}
+
+.topic-progress-item.is-next {
+  box-shadow: 0 0 0 2px rgba(140, 115, 85, 0.18);
+  border-color: rgba(140, 115, 85, 0.46);
 }
 
 .note-card {
