@@ -3,23 +3,28 @@
 {% block title %}Election Compass | FAQ{% endblock %}
 
 {% block content %}
-<section class="page-header">
+<section class="page-header page-header-faq">
   <div class="container">
     <p class="eyebrow">FAQ</p>
-    <h1 class="section-heading page-title">Common questions, answered in plain civic language.</h1>
-    <p class="section-copy">This page keeps quick clarifications separate from the deeper assistant flow so users can read first and ask follow-up questions second.</p>
+    <h1 class="section-heading page-title">Public clarifications on the election process.</h1>
+    <p class="section-copy">This page is designed as a formal clarification layer so users can read concise answers before moving into deeper assistant guidance.</p>
   </div>
 </section>
 
-<section class="section">
+<section class="section faq-section">
   <div class="container">
-    <div class="faq-grid">
+    <div class="faq-stack">
       {% for item in faq_items %}
-      <a class="faq-card clickable-card reveal{% if loop.index == 2 %} delay-1{% elif loop.index == 3 %} delay-2{% else %}{% if loop.index > 3 %} delay-3{% endif %}{% endif %}" href="{{ url_for('assistant_page', topic=item.topic, question=item.question) }}">
-        <span class="faq-tag">{{ item.topic.replace('_', ' ')|title }}</span>
-        <h3>{{ item.question }}</h3>
-        <p>{{ item.answer }}</p>
-      </a>
+      <details class="faq-item reveal{% if loop.index == 2 %} delay-1{% elif loop.index == 3 %} delay-2{% else %}{% if loop.index > 3 %} delay-3{% endif %}{% endif %}">
+        <summary>
+          <span class="faq-tag">{{ item.topic.replace('_', ' ')|title }}</span>
+          <span class="faq-question">{{ item.question }}</span>
+        </summary>
+        <div class="faq-answer">
+          <p>{{ item.answer }}</p>
+          <a class="button-ghost faq-button" href="{{ url_for('assistant_page', topic=item.topic, question=item.question) }}">Ask the Assistant About This</a>
+        </div>
+      </details>
       {% endfor %}
     </div>
   </div>

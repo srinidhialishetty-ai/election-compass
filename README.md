@@ -1,39 +1,50 @@
 # Election Compass
 
-Election Compass is an interactive civic education platform designed to simplify and explain the election process in a clear, structured, and user-friendly way.
+Election Compass is an interactive civic education project that helps users understand the election process in a clear, structured, and guided way.
 
-The platform guides users through the complete election journey — from pre-election stages to voting day, counting, and results — while answering common questions and removing confusion around how elections actually work.
+It explains:
+- election overview
+- procedural stages
+- sample process timelines
+- registration context
+- voting day flow
+- counting and results
+- common public questions
 
----
+## Purpose
 
-## Features
+The project is designed for learners who want a serious but accessible explanation of how election processes work before, during, and after voting.
 
-- Guided learning paths to understand elections step-by-step  
-- Structured breakdown of election stages  
-- Simplified timeline representation  
-- Interactive assistant for user queries  
-- FAQ section addressing common doubts  
-- Clean and intuitive user interface for easy navigation  
+## Experience
 
----
+The application includes:
+- a guided assistant workspace
+- dedicated learning paths
+- a structured stages page
+- a chronological timeline page
+- a public-facing FAQ section
 
-## Objective
+## Stack
 
-The goal of Election Compass is to make civic knowledge more accessible by transforming complex election procedures into an engaging and easy-to-understand experience.
+- Flask
+- HTML
+- CSS
+- Vanilla JavaScript
 
-It is designed especially for:
-- first-time voters  
-- students  
-- anyone seeking clarity on election processes  
+## Run locally
 
----
+```bash
+pip install -r requirements.txt
+python app.py
+```
 
-## Tech Stack
+Optional environment variables:
 
-- Frontend: HTML, CSS, JavaScript  
-- Backend: Flask (Python)  
-- UI Design: Custom structured layout with responsive design  
+```bash
+GEMINI_API_KEY=your_key
+FLASK_SECRET_KEY=your_secret
+```
 
----
+## Note
 
-## Project Structure
+Exact election dates, rules, and requirements vary by official election authority. Timeline content in this project is illustrative and educational.

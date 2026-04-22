@@ -13,13 +13,19 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Newsreader:opsz,wght@6..72,400;6..72,600;6..72,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
+<body class="page-{{ active_page }}">
+  <div class="top-strip">
+    <div class="container top-strip-inner">
+      <span>Public civic learning interface</span>
+      <span>Neutral guidance on stages, timelines, voting, and results</span>
+    </div>
+  </div>
   <header class="topbar">
     <div class="container topbar-inner">
-      <a class="brand" href="{{ url_for('index') }}">
-        Election Compass
-        <small>Guiding users through the election process, step by step.</small>
-      </a>
+      <div class="brand-lockup">
+        <a class="brand" href="{{ url_for('index') }}">Election Compass</a>
+        <small class="brand-subtitle">Guiding users through the election process, step by step.</small>
+      </div>
 
       <nav class="nav" aria-label="Primary">
         <a href="{{ url_for('index') }}" class="{% if active_page == 'home' %}is-active{% endif %}">Home</a>
@@ -38,9 +44,9 @@
 
   <footer class="footer">
     <div class="container footer-inner">
-      <div>
+      <div class="footer-intro">
         <div class="footer-mark">Election Compass</div>
-        <p class="footer-copy">Educational sample content updated for {{ today }}. Exact dates and requirements depend on official election authorities.</p>
+        <p class="footer-copy">Educational sample content updated for {{ today }}. Exact dates, deadlines, and requirements depend on official election authorities.</p>
       </div>
 
       <div class="footer-links">
