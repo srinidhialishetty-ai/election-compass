@@ -1,6 +1,8 @@
 const assistantForm = document.getElementById("assistant-form");
+let currentContext = "overview";
 
 function typeWriterEffect(element, text, speed = 10) {
+    if (!element) return;
     let i = 0;
     element.innerHTML = "";
     function typing() {
@@ -12,6 +14,47 @@ function typeWriterEffect(element, text, speed = 10) {
     }
     typing();
 }
+
+function updateProgress(step) {
+    const map = {
+        "overview": 20,
+        "stages": 40,
+        "timeline": 60,
+        "voting": 80,
+        "voting_day": 80,
+        "results": 100
+    };
+    const progressFill = document.getElementById("progressFill");
+    if (progressFill && map[step]) {
+        progressFill.style.width = map[step] + "%";
+    }
+}
+
+function setContext(context) {
+    currentContext = context;
+    updateProgress(context);
+}
+
+function sendToBackend(input) {
+    if (window.submitAssistantQuestion) {
+        window.submitAssistantQuestion(input, currentContext, false, "manual");
+        return;
+    }
+
+    const params = new URLSearchParams({
+        topic: currentContext,
+        question: input
+    });
+    window.location.href = "/assistant?" + params.toString();
+}
+
+function askQuestion(question) {
+    sendToBackend(question);
+}
+
+window.setContext = setContext;
+window.sendToBackend = sendToBackend;
+window.askQuestion = askQuestion;
 
 if (assistantForm) {
   const assistantInput = document.getElementById("assistant-input");
@@ -41,9 +84,11 @@ if (assistantForm) {
   let currentTopic = initialState.topic || "overview";
   let lastResponseText = responseCard.textContent.trim();
   let activeRequestController = null;
+  setContext(currentTopic);
 
   function updateTopicSelection(topic) {
     currentTopic = topic;
+    setContext(topic);
     chips.forEach((chip) => {
       chip.classList.toggle("active", chip.dataset.topic === topic);
     });
@@ -87,7 +132,7 @@ if (assistantForm) {
       .filter(Boolean)
       .join("\n");
     updateSuggestions(data.suggestions || []);
-    updateProgress(data.progress || {});
+    updateLearningProgress(data.progress || {});
     updateVisitedTopics(data.visited_topics || [], data.suggested_next_topic || "");
     updateTopicSelection(data.topic || currentTopic);
     responseCard.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -112,7 +157,7 @@ if (assistantForm) {
     });
   }
 
-  function updateProgress(progress) {
+  function updateLearningProgress(progress) {
     progressItems.forEach((item) => {
       const key = item.dataset.progressKey;
       const active = Boolean(progress[key]);
@@ -193,6 +238,7 @@ if (assistantForm) {
         signal: requestController.signal,
         body: JSON.stringify({
           question,
+          context: currentContext,
           topic,
           mode: modeSelect.value,
           style: styleSelect.value,
@@ -262,10 +308,6 @@ if (assistantForm) {
     return div.innerHTML;
   }
 
-  function sendToBackend(question) {
-    submitQuestion(question, currentTopic, false, "manual");
-  }
-
   function explainSimple() {
     const input = document.querySelector("#user-input") || document.querySelector("#assistant-input");
     if (!input || !input.value.trim()) return;
@@ -273,14 +315,14 @@ if (assistantForm) {
     sendToBackend(modified);
   }
 
-  function askQuestion(question) {
+  function askAssistantQuestion(question) {
     assistantInput.value = question;
     submitQuestion(question, currentTopic, false, "suggestion");
   }
 
   window.explainSimple = explainSimple;
-  window.askQuestion = askQuestion;
-  window.sendToBackend = sendToBackend;
+  window.submitAssistantQuestion = submitQuestion;
+  window.askQuestion = askAssistantQuestion;
 
   assistantForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -302,7 +344,7 @@ if (assistantForm) {
       return;
     }
 
-    askQuestion(button.textContent.trim());
+    askAssistantQuestion(button.textContent.trim());
   });
 
   copyResponseButton.addEventListener("click", async () => {
@@ -327,7 +369,7 @@ if (assistantForm) {
         updateTopicSelection(initialState.topic || data.current_topic);
       }
       if (data.progress) {
-        updateProgress(data.progress);
+        updateLearningProgress(data.progress);
       }
       if (data.visited_topics) {
         updateVisitedTopics(data.visited_topics, "");

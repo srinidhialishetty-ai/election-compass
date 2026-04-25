@@ -101,6 +101,18 @@
 
 <section class="section">
   <div class="container">
+    <div class="common-questions">
+      <h3>Common Questions People Have</h3>
+      <button onclick="askQuestion('Am I eligible to vote?')">Am I eligible to vote?</button>
+      <button onclick="askQuestion('What happens before voting day?')">Before voting day</button>
+      <button onclick="askQuestion('What happens after voting?')">After voting</button>
+      <button onclick="askQuestion('Why does counting take time?')">Why counting takes time</button>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
     <p class="eyebrow">Quick Access</p>
     <h2 class="section-heading">Move directly into the area you need.</h2>
     <div class="quick-grid">
@@ -150,4 +162,8 @@
     </div>
   </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='script.js') }}"></script>
 {% endblock %}
