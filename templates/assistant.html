@@ -11,7 +11,6 @@
     <div class="page-header-ledger">
       <span>Neutral process guidance</span>
       <span>Session-aware topic memory</span>
-      <span>Follow-up prompts included</span>
     </div>
   </div>
 </section>
@@ -74,7 +73,6 @@
             </div>
 
             <div class="helper-actions">
-              <button class="button-ghost" type="button" id="explain-new-btn">Explain like I'm new</button>
               <button class="button-ghost" type="button" id="copy-response-btn">Copy response</button>
             </div>
           </form>
@@ -82,7 +80,7 @@
           <div class="assistant-output">
             <div class="response-meta">
               <span class="response-status" id="response-status">Ready to guide</span>
-              <span class="response-context" id="response-context">Current focus: {{ initial_topic.replace('_', ' ')|title }}</span>
+              <span class="response-context" id="response-context">Current focus: <span class="current-focus">{{ initial_topic.replace('_', ' ')|title }}</span></span>
             </div>
 
             <article class="response-card" id="response-card" aria-live="polite">
@@ -91,6 +89,17 @@
                 Start with a question like "What is the election process?", "Explain voting day", or "Show me the timeline." Exact dates and requirements can vary depending on official election authorities, but this platform explains the overall process clearly and neutrally.
               </p>
             </article>
+
+            <div class="helper-actions response-actions">
+              <button class="button-ghost" type="button" id="explain-new-btn" onclick="explainSimple()">Explain like I'm new</button>
+            </div>
+
+            <div class="next-step-card">
+              <p>Suggested next step</p>
+              <button onclick="askQuestion('Explain next stage')">
+                Continue to next stage →
+              </button>
+            </div>
 
             <div class="next-rail">
               <p class="control-label next-label">Suggested Next Questions</p>

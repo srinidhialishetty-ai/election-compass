@@ -914,6 +914,14 @@ button {
   font-weight: 700;
 }
 
+.current-focus {
+  background: #e8ede6;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .response-card {
   margin-top: 1rem;
   min-height: 170px;
@@ -988,6 +996,41 @@ button {
 
 .next-rail {
   margin-top: 1rem;
+}
+
+.response-actions {
+  margin-top: 0.85rem;
+}
+
+.next-step-card {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(221, 214, 200, 0.92);
+  background: rgba(232, 237, 230, 0.74);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.next-step-card p {
+  margin: 0;
+  color: var(--navy);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.next-step-card button {
+  border: 1px solid rgba(110, 123, 91, 0.46);
+  border-radius: 999px;
+  background: rgba(255, 253, 252, 0.9);
+  color: var(--navy);
+  padding: 0.66rem 0.9rem;
+  font-size: 0.86rem;
+  font-weight: 800;
 }
 
 .progress-card,

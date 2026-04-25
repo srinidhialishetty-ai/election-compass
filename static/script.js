@@ -1,5 +1,18 @@
 const assistantForm = document.getElementById("assistant-form");
 
+function typeWriterEffect(element, text, speed = 10) {
+    let i = 0;
+    element.innerHTML = "";
+    function typing() {
+        if (i < text.length) {
+            element.innerHTML += text.charAt(i);
+            i++;
+            setTimeout(typing, speed);
+        }
+    }
+    typing();
+}
+
 if (assistantForm) {
   const assistantInput = document.getElementById("assistant-input");
   const modeSelect = document.getElementById("mode-select");
@@ -9,7 +22,6 @@ if (assistantForm) {
   const responseContext = document.getElementById("response-context");
   const nextQuestions = document.getElementById("next-questions");
   const copyResponseButton = document.getElementById("copy-response-btn");
-  const explainNewButton = document.getElementById("explain-new-btn");
   const chips = document.querySelectorAll(".chip[data-topic]");
   const progressItems = document.querySelectorAll(".progress-item");
   const topicProgressItems = document.querySelectorAll(".topic-progress-item");
@@ -55,15 +67,16 @@ if (assistantForm) {
     responseCard.innerHTML = `
       <h3>${escapeHtml(data.heading || heading)}</h3>
       <div class="response-body">
-        <p>${escapeHtml(data.answer)}</p>
+        <p id="response-text"></p>
         ${bulletMarkup ? `<ul class="response-points">${bulletMarkup}</ul>` : ""}
         ${clarification}
         ${example}
       </div>
     `;
+    typeWriterEffect(document.getElementById("response-text"), escapeHtml(data.answer || ""));
 
     responseStatus.textContent = data.used_fallback ? "Fallback guidance used" : "Assistant response ready";
-    responseContext.textContent = `Current focus: ${heading}`;
+    responseContext.innerHTML = `Current focus: <span class="current-focus">${escapeHtml(heading)}</span>`;
     lastResponseText = [
       data.heading || heading,
       data.answer || "",
@@ -249,6 +262,26 @@ if (assistantForm) {
     return div.innerHTML;
   }
 
+  function sendToBackend(question) {
+    submitQuestion(question, currentTopic, false, "manual");
+  }
+
+  function explainSimple() {
+    const input = document.querySelector("#user-input") || document.querySelector("#assistant-input");
+    if (!input || !input.value.trim()) return;
+    const modified = "Explain simply: " + input.value.trim();
+    sendToBackend(modified);
+  }
+
+  function askQuestion(question) {
+    assistantInput.value = question;
+    submitQuestion(question, currentTopic, false, "suggestion");
+  }
+
+  window.explainSimple = explainSimple;
+  window.askQuestion = askQuestion;
+  window.sendToBackend = sendToBackend;
+
   assistantForm.addEventListener("submit", (event) => {
     event.preventDefault();
     submitQuestion(assistantInput.value, currentTopic, false, "manual");
@@ -269,15 +302,7 @@ if (assistantForm) {
       return;
     }
 
-    const question = button.textContent.trim();
-    assistantInput.value = question;
-    submitQuestion(question, currentTopic, false, "suggestion");
-  });
-
-  explainNewButton.addEventListener("click", () => {
-    const text = assistantInput.value.trim() || "Explain the election process simply";
-    assistantInput.value = text;
-    submitQuestion(text, currentTopic, true, "explain_new");
+    askQuestion(button.textContent.trim());
   });
 
   copyResponseButton.addEventListener("click", async () => {
