@@ -387,10 +387,6 @@ def create_app() -> Flask:
             progress["recap_completed"] = True
 
         effective_style = style
-        if interaction_source == "manual" and style == "simple":
-            effective_style = "detailed"
-        if interaction_source in {"chip", "suggestion"} and style == "detailed":
-            effective_style = "simple"
         if interaction_source == "explain_new":
             effective_style = "simple"
 
@@ -420,11 +416,11 @@ def create_app() -> Flask:
 
         example = None
         if topic == "timeline":
-            example = "Example sequence: public notice -> registration checkpoint -> voting day -> counting -> official reporting."
+            example = "Public notice -> registration checkpoint -> voting day -> counting -> official reporting."
         elif topic == "voting_day":
-            example = "Example: a voter arrives, checks in, follows instructions, and then submits a ballot."
+            example = "A voter arrives, checks in, follows instructions, and then submits a ballot."
         elif topic == "results":
-            example = "Example: early reports may appear before final confirmation is complete."
+            example = "Early reports may appear before final confirmation is complete."
 
         suggestions = build_suggestions(topic, progress, visited_topics, last_topic)
         section = SECTION_MAP.get(topic, "assistant")
@@ -586,7 +582,7 @@ def create_app() -> Flask:
             bullets = TOPIC_GUIDES[topic]["details"][:3]
 
         clarification = str(data.get("clarification", TOPIC_GUIDES[topic]["simple"])).strip() or TOPIC_GUIDES[topic]["simple"]
-        example = str(data.get("example", "")).strip() or None
+        example = normalize_example_text(data.get("example", ""))
 
         return {
             "heading": heading,
@@ -603,6 +599,11 @@ def create_app() -> Flask:
             "used_fallback": False,
             "source": "gemini",
         }
+
+    def normalize_example_text(example: object) -> str | None:
+        cleaned = str(example or "").strip()
+        cleaned = re.sub(r"^\s*example(?:\s+sequence)?\s*:\s*", "", cleaned, flags=re.IGNORECASE)
+        return cleaned or None
 
     FAQ_ITEMS = [
         {
@@ -679,8 +680,24 @@ def create_app() -> Flask:
         mode = str(payload.get("mode", session.get("mode", "quick"))).strip().lower()
         style = str(payload.get("style", session.get("style", "simple"))).strip().lower()
         requested_topic = str(payload.get("topic", "")).strip().lower()
+        context_topic = str(payload.get("context", "")).strip().lower()
         explain_like_new = bool(payload.get("explain_like_new"))
         interaction_source = str(payload.get("interaction_source", session.get("last_interaction_source", "manual"))).strip().lower()
+
+        mode_aliases = {
+            "step-by-step": "step",
+            "step_by_step": "step",
+            "step by step": "step",
+        }
+        style_aliases = {
+            "clear": "simple",
+            "clear explanation": "simple",
+            "step-by-step": "detailed",
+            "step_by_step": "detailed",
+            "step by step": "detailed",
+        }
+        mode = mode_aliases.get(mode, mode)
+        style = style_aliases.get(style, style)
 
         if mode not in {"quick", "step", "ask"}:
             mode = "quick"
@@ -723,7 +740,7 @@ def create_app() -> Flask:
                 400,
             )
 
-        topic = requested_topic if requested_topic in TOPIC_GUIDES else classify_topic(question)
+        topic = requested_topic if requested_topic in TOPIC_GUIDES else context_topic if context_topic in TOPIC_GUIDES else classify_topic(question)
         if topic == "faq" and requested_topic in {"overview", "stages", "timeline", "registration", "voting_day", "results"}:
             topic = requested_topic
 

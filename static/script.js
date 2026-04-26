@@ -141,6 +141,7 @@ if (assistantForm) {
   };
 
   let currentTopic = initialState.topic || "overview";
+  let lastQuestion = initialState.question || "";
   let lastResponseText = responseCard.textContent.trim();
   let activeRequestController = null;
   setContext(currentTopic);
@@ -164,8 +165,9 @@ if (assistantForm) {
     const clarification = data.clarification
       ? `<div class="response-note">${escapeHtml(data.clarification)}</div>`
       : "";
-    const example = data.example
-      ? `<div class="response-example"><strong>Example:</strong> ${escapeHtml(data.example)}</div>`
+    const normalizedExample = normalizeExample(data.example);
+    const example = normalizedExample
+      ? `<div class="response-example"><strong>Example:</strong> ${escapeHtml(normalizedExample)}</div>`
       : "";
 
     responseCard.innerHTML = `
@@ -186,7 +188,7 @@ if (assistantForm) {
       data.answer || "",
       ...(data.bullets || []),
       data.clarification || "",
-      data.example ? `Example: ${data.example}` : "",
+      normalizedExample ? `Example: ${normalizedExample}` : "",
     ]
       .filter(Boolean)
       .join("\n");
@@ -256,7 +258,12 @@ if (assistantForm) {
   }
 
   async function submitQuestion(question, topic = currentTopic, explainLikeNew = false, interactionSource = "manual") {
-    if (!question.trim()) {
+    const trimmedQuestion = (question || "").trim();
+    const resolvedTopic = interactionSource === "chip"
+      ? (topic || currentTopic)
+      : inferTopicFromQuestion(trimmedQuestion);
+
+    if (!trimmedQuestion) {
       responseStatus.classList.remove("is-loading");
       responseStatus.textContent = "Please enter a question";
       responseCard.classList.remove("is-loading");
@@ -279,6 +286,10 @@ if (assistantForm) {
       return;
     }
 
+    lastQuestion = trimmedQuestion;
+    currentTopic = resolvedTopic;
+    setContext(resolvedTopic);
+
     if (activeRequestController) {
       activeRequestController.abort();
     }
@@ -286,7 +297,7 @@ if (assistantForm) {
     const requestController = new AbortController();
     activeRequestController = requestController;
 
-    setLoadingState(question);
+    setLoadingState(trimmedQuestion);
 
     try {
       const response = await fetch("/api/assistant", {
@@ -296,9 +307,9 @@ if (assistantForm) {
         },
         signal: requestController.signal,
         body: JSON.stringify({
-          question,
+          question: trimmedQuestion,
           context: currentContext,
-          topic,
+          topic: resolvedTopic,
           mode: modeSelect.value,
           style: styleSelect.value,
           explain_like_new: explainLikeNew,
@@ -367,6 +378,19 @@ if (assistantForm) {
     return div.innerHTML;
   }
 
+  function normalizeExample(exampleText) {
+    return (exampleText || "").replace(/^\s*example(?:\s+sequence)?\s*:\s*/i, "").trim();
+  }
+
+  function regenerateLastQuestion(interactionSource = "manual") {
+    const question = lastQuestion || assistantInput.value.trim();
+    if (!question) {
+      return;
+    }
+    assistantInput.value = question;
+    submitQuestion(question, currentTopic, false, interactionSource);
+  }
+
   function explainSimple() {
     const baseQuestion = assistantInput.value.trim() || `Explain ${topicLabels[currentTopic] || "the election process"} like I'm new`;
     assistantInput.value = baseQuestion;
@@ -382,6 +406,14 @@ if (assistantForm) {
   window.submitAssistantQuestion = submitQuestion;
   window.askQuestion = askAssistantQuestion;
 
+  modeSelect.addEventListener("change", () => {
+    regenerateLastQuestion("manual");
+  });
+
+  styleSelect.addEventListener("change", () => {
+    regenerateLastQuestion("manual");
+  });
+
   assistantForm.addEventListener("submit", (event) => {
     event.preventDefault();
     submitQuestion(assistantInput.value, currentTopic, false, "manual");
@@ -390,8 +422,9 @@ if (assistantForm) {
   chips.forEach((chip) => {
     chip.addEventListener("click", () => {
       updateTopicSelection(chip.dataset.topic);
-      assistantInput.value = chip.dataset.question || chip.textContent.trim();
-      submitQuestion(assistantInput.value, chip.dataset.topic, false, "chip");
+      const question = lastQuestion || assistantInput.value.trim() || chip.dataset.question || chip.textContent.trim();
+      assistantInput.value = question;
+      submitQuestion(question, chip.dataset.topic, false, "chip");
     });
   });
 
