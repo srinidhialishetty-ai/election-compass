@@ -14,36 +14,36 @@
 <section class="section stages-section">
   <div class="container">
     <div class="process-grid stages-page-grid">
-      <article class="process-card reveal">
+      <a class="process-card clickable-card reveal" href="{{ url_for('assistant_page', topic='overview', question='Explain the preparation stage') }}">
         <span class="stage-index">01</span>
         <h3>Preparation / Pre-Election Context</h3>
         <p>Authorities organize the election, announce procedures, and prepare the conditions needed for participation.</p>
-      </article>
-      <article class="process-card reveal delay-1">
+      </a>
+      <a class="process-card clickable-card reveal delay-1" href="{{ url_for('assistant_page', topic='registration', question='Explain the registration and eligibility stage') }}">
         <span class="stage-index">02</span>
         <h3>Registration / Eligibility Context</h3>
         <p>Eligible voters confirm whether they can participate and whether any deadlines or requirements apply.</p>
-      </article>
-      <article class="process-card reveal delay-2">
+      </a>
+      <a class="process-card clickable-card reveal delay-2" href="{{ url_for('assistant_page', topic='stages', question='Explain the campaign and candidate information phase') }}">
         <span class="stage-index">03</span>
         <h3>Campaign / Candidate Phase</h3>
         <p>People gather information, compare options, and follow official notices before ballots are cast.</p>
-      </article>
-      <article class="process-card reveal delay-3">
+      </a>
+      <a class="process-card clickable-card reveal delay-3" href="{{ url_for('assistant_page', topic='voting_day', question='Explain what happens on voting day') }}">
         <span class="stage-index">04</span>
         <h3>Voting Day</h3>
         <p>Voters complete the official process to cast ballots, often including check-in and instructions.</p>
-      </article>
-      <article class="process-card reveal delay-3">
+      </a>
+      <a class="process-card clickable-card reveal delay-3" href="{{ url_for('assistant_page', topic='results', question='Explain counting and results') }}">
         <span class="stage-index">05</span>
         <h3>Counting and Results</h3>
         <p>Votes are counted and reported before official results are finalized through the proper process.</p>
-      </article>
-      <article class="process-card reveal delay-3">
+      </a>
+      <a class="process-card clickable-card reveal delay-3" href="{{ url_for('assistant_page', topic='results', question='Explain the post-election outcome stage') }}">
         <span class="stage-index">06</span>
         <h3>Post-Election Outcome</h3>
         <p>Final certification or confirmation closes the process and formally records the result.</p>
-      </article>
+      </a>
     </div>
 
     <div class="inline-cta reveal">

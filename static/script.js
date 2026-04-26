@@ -1,6 +1,17 @@
 const assistantForm = document.getElementById("assistant-form");
 let currentContext = "overview";
 
+function inferTopicFromQuestion(question) {
+    const text = (question || "").toLowerCase();
+    if (text.includes("timeline") || text.includes("order") || text.includes("sequence") || text.includes("when")) return "timeline";
+    if (text.includes("register") || text.includes("eligible") || text.includes("eligibility")) return "registration";
+    if (text.includes("voting day") || text.includes("poll") || text.includes("ballot")) return "voting_day";
+    if (text.includes("count") || text.includes("result") || text.includes("after voting") || text.includes("after votes")) return "results";
+    if (text.includes("stage") || text.includes("step")) return "stages";
+    if (text.includes("question") || text.includes("confused")) return "faq";
+    return currentContext || "overview";
+}
+
 function typeWriterEffect(element, text, speed = 10) {
     if (!element) return;
     let i = 0;
@@ -35,26 +46,74 @@ function setContext(context) {
     updateProgress(context);
 }
 
-function sendToBackend(input) {
+function sendToBackend(input, topic) {
+    const resolvedTopic = topic || inferTopicFromQuestion(input);
     if (window.submitAssistantQuestion) {
-        window.submitAssistantQuestion(input, currentContext, false, "manual");
+        window.submitAssistantQuestion(input, resolvedTopic, false, "manual");
         return;
     }
 
     const params = new URLSearchParams({
-        topic: currentContext,
+        topic: resolvedTopic,
         question: input
     });
     window.location.href = "/assistant?" + params.toString();
 }
 
-function askQuestion(question) {
-    sendToBackend(question);
+function askQuestion(question, topic) {
+    if (topic) {
+        setContext(topic);
+    }
+    sendToBackend(question, topic);
 }
 
 window.setContext = setContext;
 window.sendToBackend = sendToBackend;
 window.askQuestion = askQuestion;
+
+const timelineTogglePanel = document.querySelector("[data-timeline-toggle-panel]");
+if (timelineTogglePanel) {
+  const timelineModes = {
+    simple: [
+      "The election process begins with public information and preparation.",
+      "Registration checks help voters confirm requirements before deadlines.",
+      "Voters learn practical details before voting day arrives.",
+      "Voting day is when ballots are cast through the official process.",
+      "Counting and reporting happen after voting closes; final confirmation can take longer."
+    ],
+    detailed: [
+      "Election authorities publish notices, rules, and educational material so voters can understand the process.",
+      "Registration checkpoints give voters time to confirm eligibility, identity, address, or other local requirements.",
+      "The public information phase helps people review official guidance, options, and voting logistics.",
+      "On voting day, voters check in, follow instructions, and submit ballots through approved methods.",
+      "After voting ends, ballots are counted, reviewed, reported, and then officially confirmed under the relevant process."
+    ],
+    phases: [
+      "Before voting: preparation and public notice.",
+      "Before voting: registration and eligibility checkpoint.",
+      "Before voting: official information and practical readiness.",
+      "Voting day: ballots are cast.",
+      "After voting: counting, reporting, and final confirmation."
+    ]
+  };
+
+  const modeButtons = timelineTogglePanel.querySelectorAll("[data-timeline-mode]");
+  const copyTargets = document.querySelectorAll("[data-timeline-copy]");
+
+  function setTimelineMode(mode) {
+    const content = timelineModes[mode] || timelineModes.simple;
+    copyTargets.forEach((target, index) => {
+      target.textContent = content[index] || target.textContent;
+    });
+    modeButtons.forEach((button) => {
+      button.classList.toggle("is-active", button.dataset.timelineMode === mode);
+    });
+  }
+
+  modeButtons.forEach((button) => {
+    button.addEventListener("click", () => setTimelineMode(button.dataset.timelineMode));
+  });
+}
 
 if (assistantForm) {
   const assistantInput = document.getElementById("assistant-input");
@@ -120,7 +179,7 @@ if (assistantForm) {
     `;
     typeWriterEffect(document.getElementById("response-text"), escapeHtml(data.answer || ""));
 
-    responseStatus.textContent = data.used_fallback ? "Fallback guidance used" : "Assistant response ready";
+    responseStatus.textContent = "Assistant response ready";
     responseContext.innerHTML = `Current focus: <span class="current-focus">${escapeHtml(heading)}</span>`;
     lastResponseText = [
       data.heading || heading,
@@ -177,7 +236,7 @@ if (assistantForm) {
     });
   }
 
-  function setLoadingState(questionText, text = "Thinking through the election process...") {
+  function setLoadingState(questionText) {
     responseStatus.classList.add("is-loading");
     responseStatus.textContent = "Preparing explanation...";
     responseCard.classList.add("is-loading");
@@ -309,10 +368,9 @@ if (assistantForm) {
   }
 
   function explainSimple() {
-    const input = document.querySelector("#user-input") || document.querySelector("#assistant-input");
-    if (!input || !input.value.trim()) return;
-    const modified = "Explain simply: " + input.value.trim();
-    sendToBackend(modified);
+    const baseQuestion = assistantInput.value.trim() || `Explain ${topicLabels[currentTopic] || "the election process"} like I'm new`;
+    assistantInput.value = baseQuestion;
+    submitQuestion(baseQuestion, currentTopic, true, "explain_new");
   }
 
   function askAssistantQuestion(question) {
@@ -331,10 +389,27 @@ if (assistantForm) {
 
   chips.forEach((chip) => {
     chip.addEventListener("click", () => {
-      chip.classList.add("active");
       updateTopicSelection(chip.dataset.topic);
       assistantInput.value = chip.dataset.question || chip.textContent.trim();
       submitQuestion(assistantInput.value, chip.dataset.topic, false, "chip");
+    });
+  });
+
+  topicProgressItems.forEach((item) => {
+    item.setAttribute("role", "button");
+    item.setAttribute("tabindex", "0");
+    item.addEventListener("click", () => {
+      const topic = item.dataset.topicKey || "overview";
+      const question = `Explain the ${topicLabels[topic] || topic} stage`;
+      assistantInput.value = question;
+      updateTopicSelection(topic);
+      submitQuestion(question, topic, false, "chip");
+    });
+    item.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        item.click();
+      }
     });
   });
 

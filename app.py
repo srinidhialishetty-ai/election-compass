@@ -768,6 +768,10 @@ def create_app() -> Flask:
     def health():
         return jsonify({"status": "ok"})
 
+    @app.route("/favicon.ico")
+    def favicon():
+        return ("", 204)
+
     return app
 
 
@@ -776,4 +780,4 @@ app = create_app()
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8080"))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port, debug=os.getenv("FLASK_DEBUG") == "1")

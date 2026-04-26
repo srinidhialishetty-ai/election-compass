@@ -17,7 +17,10 @@
       <div class="timeline-panel reveal">
         <h3>Why this page exists</h3>
         <p>Timeline confusion is one of the biggest barriers for new learners. This page makes the sequence visible without turning the experience into a live election tracker.</p>
-        <div class="timeline-actions">
+        <div class="timeline-actions" data-timeline-toggle-panel>
+          <button class="button-ghost is-active" type="button" data-timeline-mode="simple">Simple</button>
+          <button class="button-ghost" type="button" data-timeline-mode="detailed">Detailed</button>
+          <button class="button-ghost" type="button" data-timeline-mode="phases">By phase</button>
           <a class="button-ghost" href="{{ url_for('assistant_page', topic='timeline', question='Explain the election timeline simply') }}">Explain timeline simply</a>
           <a class="button-ghost" href="{{ url_for('assistant_page', topic='results', question='What happens after voting day?') }}">What happens after voting day?</a>
         </div>
@@ -27,30 +30,34 @@
         <article class="timeline-item reveal">
           <span class="timeline-date">Sep 3</span>
           <h4>Election Information Opens</h4>
-          <p>General notices and educational materials begin to explain what the election covers and how participation works.</p>
+          <p data-timeline-copy>General notices and educational materials begin to explain what the election covers and how participation works.</p>
         </article>
         <article class="timeline-item reveal delay-1">
           <span class="timeline-date">Sep 18</span>
           <h4>Registration Checkpoint</h4>
-          <p>Eligible voters review registration status and prepare before deadlines become more urgent.</p>
+          <p data-timeline-copy>Eligible voters review registration status and prepare before deadlines become more urgent.</p>
         </article>
         <article class="timeline-item reveal delay-2">
           <span class="timeline-date">Oct 8</span>
           <h4>Public Information Phase</h4>
-          <p>More information becomes available about the election, its options, and practical participation details.</p>
+          <p data-timeline-copy>More information becomes available about the election, its options, and practical participation details.</p>
         </article>
         <article class="timeline-item reveal delay-3">
           <span class="timeline-date">Nov 5</span>
           <h4>Voting Day</h4>
-          <p>Voters complete the official process and submit ballots through the approved method.</p>
+          <p data-timeline-copy>Voters complete the official process and submit ballots through the approved method.</p>
         </article>
         <article class="timeline-item reveal delay-3">
           <span class="timeline-date">Nov 7</span>
           <h4>Counting and Reporting</h4>
-          <p>Ballots are counted, results are reported, and final confirmation may continue beyond the first update.</p>
+          <p data-timeline-copy>Ballots are counted, results are reported, and final confirmation may continue beyond the first update.</p>
         </article>
       </div>
     </div>
   </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='script.js') }}"></script>
 {% endblock %}
