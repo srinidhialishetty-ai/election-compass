@@ -371,6 +371,35 @@ def create_app() -> Flask:
                 break
         return unique
 
+    def build_simple_response(topic: str) -> str:
+        guide = TOPIC_GUIDES.get(topic, TOPIC_GUIDES["overview"])
+        return (
+            f"{guide['simple']} "
+            f"{guide['summary']} "
+            "Each stage helps keep the process organized and easier to follow."
+        )
+
+    def build_detailed_response(topic: str) -> str:
+        guide = TOPIC_GUIDES.get(topic, TOPIC_GUIDES["overview"])
+        details = guide["details"]
+        first = (
+            f"{guide['summary']} It is not limited to one day; it includes preparation, eligibility checks, "
+            "public information, voting, counting, and official confirmation."
+        )
+        second = " ".join(details[:4])
+        third = (
+            "This sequence helps the process stay organized, transparent, and understandable for citizens. "
+            "Exact dates, deadlines, and requirements can still vary by official election authority."
+        )
+        return f"{first}\n\n{second}\n\n{third}"
+
+    def build_step_response(topic: str) -> str:
+        guide = TOPIC_GUIDES.get(topic, TOPIC_GUIDES["overview"])
+        return "\n".join(
+            f"{index + 1}. {detail}"
+            for index, detail in enumerate(guide["details"])
+        )
+
     def build_local_answer(
         question: str,
         topic: str,
@@ -390,29 +419,46 @@ def create_app() -> Flask:
         if interaction_source == "explain_new":
             effective_style = "simple"
 
+        is_step_by_step = mode == "step"
+
         if effective_style == "timeline":
+            answer = f"{guide['title']} in timeline order:"
             bullets = [
                 "Preparation establishes the rules, timeline, and logistics.",
                 "Registration and eligibility checks happen before participation.",
                 "Voting day follows the public information phase.",
                 "Counting and reporting continue after ballots are cast.",
             ]
-        elif effective_style == "detailed" or mode == "step":
-            bullets = guide["details"][:4]
+            clarification = guide["timeline"]
+        elif is_step_by_step:
+            answer = build_step_response(topic)
+            bullets = []
+            clarification = ""
+        elif effective_style == "detailed":
+            answer = build_detailed_response(topic)
+            bullets = []
+            clarification = ""
         else:
-            bullets = guide["details"][:3]
+            answer = build_simple_response(topic)
+            bullets = []
+            clarification = ""
 
-        clarification = guide["timeline"] if effective_style == "timeline" else guide["simple"]
         if interaction_source == "suggestion" and last_topic and last_topic != topic:
             clarification += f" This follows naturally from your previous question about {TOPIC_GUIDES[last_topic]['title'].lower()}."
 
         if "confused" in question_lc:
-            bullets = [
-                "First, the election is prepared and explained.",
-                "Next, voters confirm participation requirements.",
-                "Then ballots are cast, counted, and officially reported.",
-            ]
-            clarification = "In the simplest terms, elections move from preparation to voting and then to counting and confirmation."
+            if is_step_by_step:
+                answer = build_step_response(topic)
+            elif effective_style == "detailed":
+                answer = build_detailed_response(topic)
+            else:
+                answer = (
+                    "In the simplest terms, elections move from preparation to voting and then to counting and confirmation. "
+                    "Each part has a clear job, so the process is easier to understand. "
+                    "Exact rules can vary by official election authority."
+                )
+            bullets = []
+            clarification = ""
 
         example = None
         if topic == "timeline":
@@ -427,7 +473,7 @@ def create_app() -> Flask:
 
         return {
             "heading": guide["title"],
-            "answer": guide["summary"],
+            "answer": answer,
             "bullets": bullets,
             "clarification": clarification,
             "example": example,
@@ -472,7 +518,11 @@ def create_app() -> Flask:
             f"User question: {question}\n\n"
             "Instructions:\n"
             "- Make the answer readable and useful for first-time learners.\n"
-            "- Return a short heading, 3 to 4 bullet points, a short clarification, and an optional example.\n"
+            "- Return a short heading, an answer string, optional bullets, a short clarification, and an optional example.\n"
+            "- If response style is simple, put 2 to 3 short beginner-friendly sentences in answer, with no numbered steps and no bullets.\n"
+            "- If response style is detailed, put 2 to 3 proper paragraphs in answer, with no numbered steps and no bullets.\n"
+            "- If learning mode is step, put only a numbered list in answer. Keep each item short. Do not include extra paragraphs or bullets.\n"
+            "- If response style is timeline, explain phases in chronological order and bullets are allowed.\n"
             "- If the interaction source is chip or suggestion, keep the explanation concise.\n"
             "- If the interaction source is manual, allow slightly more detail.\n"
             "- If the user sounds confused, simplify first.\n"
@@ -518,7 +568,7 @@ def create_app() -> Flask:
         response.raise_for_status()
         data = response.json()
         text = extract_text_from_gemini(data)
-        parsed = parse_model_json(text)
+        parsed = parse_model_json(text, mode, style)
         if not parsed:
             raise ValueError("Gemini response was not valid JSON")
 
@@ -535,22 +585,22 @@ def create_app() -> Flask:
             raise ValueError("Gemini response did not contain text")
         return "".join(text_parts)
 
-    def parse_model_json(text: str) -> dict | None:
+    def parse_model_json(text: str, mode: str, style: str) -> dict | None:
         cleaned = text.strip()
         try:
             data = json.loads(cleaned)
-            return normalize_model_response(data)
+            return normalize_model_response(data, mode, style)
         except json.JSONDecodeError:
             match = re.search(r"\{.*\}", cleaned, re.DOTALL)
             if not match:
                 return None
             try:
                 data = json.loads(match.group(0))
-                return normalize_model_response(data)
+                return normalize_model_response(data, mode, style)
             except json.JSONDecodeError:
                 return None
 
-    def normalize_model_response(data: dict) -> dict:
+    def normalize_model_response(data: dict, mode: str, style: str) -> dict:
         topic = data.get("topic", "overview")
         if topic not in TOPIC_GUIDES:
             topic = "overview"
@@ -583,6 +633,14 @@ def create_app() -> Flask:
 
         clarification = str(data.get("clarification", TOPIC_GUIDES[topic]["simple"])).strip() or TOPIC_GUIDES[topic]["simple"]
         example = normalize_example_text(data.get("example", ""))
+        answer, bullets, clarification = apply_response_style_shape(
+            topic,
+            answer,
+            bullets,
+            clarification,
+            mode,
+            style,
+        )
 
         return {
             "heading": heading,
@@ -599,6 +657,42 @@ def create_app() -> Flask:
             "used_fallback": False,
             "source": "gemini",
         }
+
+    def apply_response_style_shape(
+        topic: str,
+        answer: str,
+        bullets: list[str],
+        clarification: str,
+        mode: str,
+        style: str,
+    ) -> tuple[str, list[str], str]:
+        if style == "timeline":
+            return answer, bullets, clarification
+
+        if mode == "step":
+            source_items = bullets or [
+                line.strip()
+                for line in re.split(r"\n+", answer)
+                if line.strip()
+            ] or TOPIC_GUIDES[topic]["details"]
+            clean_items = [
+                re.sub(r"^(?:step\s*)?\d+[\).:\-]\s*", "", item, flags=re.IGNORECASE).strip()
+                for item in source_items
+            ]
+            numbered = "\n".join(
+                f"{index + 1}. {item}"
+                for index, item in enumerate(clean_items)
+                if item
+            )
+            return numbered, [], ""
+
+        if style == "detailed":
+            paragraphs = [part.strip() for part in re.split(r"\n\s*\n", answer) if part.strip()]
+            if len(paragraphs) < 2:
+                paragraphs = [build_detailed_response(topic)]
+            return "\n\n".join(paragraphs[:3]), [], ""
+
+        return build_simple_response(topic), [], ""
 
     def normalize_example_text(example: object) -> str | None:
         cleaned = str(example or "").strip()

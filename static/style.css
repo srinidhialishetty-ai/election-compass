@@ -641,6 +641,175 @@ button {
   border-color: rgba(110, 123, 91, 0.52);
 }
 
+.home-status-strip {
+  border-bottom: 1px solid rgba(221, 214, 200, 0.86);
+  background: rgba(255, 253, 252, 0.72);
+}
+
+.home-status-inner {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: rgba(31, 43, 61, 0.66);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.page-home .section,
+.page-home .hero {
+  padding-top: 1.25rem;
+}
+
+.home-system-hero .container,
+.home-band .container,
+.home-start-section .container,
+.home-glance-section .container,
+.home-questions-section .container {
+  border-top: 1px solid rgba(221, 214, 200, 0.72);
+}
+
+.home-hero-panel {
+  min-height: 300px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.38fr);
+  gap: 1.5rem;
+  align-items: center;
+  padding: 2rem;
+  border: 1px solid rgba(221, 214, 200, 0.92);
+  border-radius: var(--radius-xl);
+  background:
+    linear-gradient(135deg, rgba(31, 43, 61, 0.98), rgba(67, 82, 98, 0.96)),
+    #243246;
+  box-shadow: var(--shadow-card);
+}
+
+.home-hero-tags {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.home-hero-tags span {
+  padding: 0.78rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(251, 247, 239, 0.9);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.page-home .assistant-entry,
+.page-home .common-questions,
+.at-glance-panel {
+  box-shadow: none;
+}
+
+.home-band {
+  background: rgba(242, 237, 228, 0.38);
+}
+
+.home-start-section .quick-grid,
+.home-band .quick-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 1rem;
+}
+
+.page-home .quick-card {
+  min-height: 190px;
+}
+
+.entry-card {
+  border-color: rgba(207, 196, 176, 0.96);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 252, 0.98), rgba(246, 243, 236, 0.96));
+}
+
+.entry-label,
+.entry-micro {
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.entry-label {
+  color: rgba(31, 43, 61, 0.58);
+}
+
+.entry-micro {
+  margin-top: auto;
+  color: var(--olive);
+}
+
+.entry-card:hover,
+.entry-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: rgba(31, 43, 61, 0.52);
+  background: #fffdfc;
+}
+
+.at-glance-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.2rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(207, 196, 176, 0.92);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 253, 252, 0.82);
+}
+
+.glance-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.glance-list span {
+  padding: 0.62rem 0.72rem;
+  border-radius: 999px;
+  background: rgba(242, 237, 228, 0.86);
+  color: var(--navy-soft);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.glance-list strong {
+  margin-right: 0.35rem;
+  color: var(--navy);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.at-glance-panel p {
+  margin: 0;
+  color: var(--navy);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.page-home .button-primary:hover,
+.page-home .button-primary:focus-visible {
+  background: #e6dfd1;
+  transform: translateY(-3px);
+}
+
+.page-home .common-questions button {
+  transition: transform 200ms ease, background-color 200ms ease, border-color 200ms ease;
+}
+
+.page-home .common-questions button:hover,
+.page-home .common-questions button:focus-visible {
+  transform: translateY(-3px);
+  background: rgba(214, 222, 202, 0.92);
+  border-color: rgba(31, 43, 61, 0.42);
+}
+
 .quick-grid,
 .path-grid,
 .process-grid,
@@ -988,6 +1157,7 @@ button {
 
 .response-card {
   margin-top: 1rem;
+  scroll-margin-top: 7rem;
   min-height: 170px;
   padding: 1.15rem 1.1rem 1.15rem;
   border-radius: var(--radius-md);
@@ -1418,6 +1588,7 @@ button {
 }
 
 @media (max-width: 1100px) {
+  .home-hero-panel,
   .hero-grid,
   .assistant-grid,
   .timeline-wrap,
@@ -1440,6 +1611,11 @@ button {
     align-items: flex-start;
   }
 
+  .at-glance-panel {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .hero-ledger {
     grid-template-columns: 1fr;
   }
@@ -1447,6 +1623,7 @@ button {
 
 @media (max-width: 780px) {
   .top-strip-inner,
+  .home-status-inner,
   .topbar-inner,
   .assistant-toolbar,
   .input-row,
@@ -1461,6 +1638,7 @@ button {
   }
 
   .hero-grid,
+  .home-hero-panel,
   .quick-grid,
   .path-grid,
   .paths-page-grid,
@@ -1478,6 +1656,17 @@ button {
 
   .hero-actions {
     flex-direction: column;
+  }
+
+  .home-hero-panel {
+    min-height: auto;
+    padding: 1.4rem;
+  }
+
+  .home-hero-tags,
+  .at-glance-panel,
+  .glance-list {
+    width: 100%;
   }
 
   .hero-title {

@@ -3,106 +3,147 @@
 {% block title %}Election Compass | Home{% endblock %}
 
 {% block content %}
-<section class="hero page-hero">
-  <div class="container hero-grid">
-    <div class="hero-panel reveal compact-hero">
-      <div class="hero-copy">
-        <p class="eyebrow hero-eyebrow">Election Compass</p>
-        <h1 class="hero-title">A dignified public guide to the election process.</h1>
-        <p class="hero-subtitle">
-          Election Compass explains how the process unfolds from preparation and registration through voting, counting, and final reporting in a calm, step-by-step way.
-        </p>
-        <div class="hero-ledger">
-          <div class="ledger-item">
-            <span>Purpose</span>
-            <strong>Election process education</strong>
-          </div>
-          <div class="ledger-item">
-            <span>Format</span>
-            <strong>Assistant-led civic guidance</strong>
-          </div>
-        </div>
-        <div class="hero-actions">
-          <a class="button-primary" href="{{ url_for('assistant_page') }}">Start Learning the Election Process</a>
-          <a class="button-secondary" href="{{ url_for('assistant_page') }}">Ask the Assistant</a>
-        </div>
-      </div>
-    </div>
-
-    <aside class="hero-aside">
-      <section class="hero-card reveal delay-1">
-        <div>
-          <p class="eyebrow">Public Orientation</p>
-          <h2>Understand procedure without losing clarity.</h2>
-          <p>The platform is designed for learners who want a serious, readable explanation of how election processes work before, during, and after voting.</p>
-        </div>
-        <ul class="mini-list">
-          <li><span class="mini-badge">01</span><span>Begin with an overview, a timeline, or a single stage.</span></li>
-          <li><span class="mini-badge">02</span><span>Move into dedicated pages for deeper constitutional context.</span></li>
-          <li><span class="mini-badge">03</span><span>Use follow-up prompts to continue learning in sequence.</span></li>
-        </ul>
-      </section>
-
-      <section class="hero-card hero-note reveal delay-2">
-        <p class="eyebrow">At a Glance</p>
-        <div class="institution-list">
-          <div>
-            <span>Overview</span>
-            <strong>Big-picture process map</strong>
-          </div>
-          <div>
-            <span>Stages</span>
-            <strong>Procedural sequence</strong>
-          </div>
-          <div>
-            <span>Timeline</span>
-            <strong>Ordered civic milestones</strong>
-          </div>
-        </div>
-      </section>
-    </aside>
+<div class="home-status-strip">
+  <div class="container home-status-inner">
+    <span>Public Civic Guidance Interface</span>
+    <span>Neutral guidance on stages, timelines, voting, and results</span>
   </div>
-</section>
+</div>
 
-<section class="section">
+<section class="hero page-hero home-system-hero">
   <div class="container">
-    <div class="split-intro reveal">
+    <div class="home-hero-panel reveal">
       <div>
-        <p class="eyebrow">Constitutional Context</p>
-        <h2 class="section-heading">A civic learning platform built for procedural understanding.</h2>
+        <h1 class="hero-title">A structured guide to the election process</h1>
+        <p class="hero-subtitle">Navigate clearly through stages, timelines, and outcomes.</p>
+        <div class="hero-actions">
+          <a class="button-primary" href="{{ url_for('assistant_page') }}">&rarr; Open Assistant</a>
+        </div>
       </div>
-      <p class="section-copy intro-copy">
-        It helps users understand election overview, stages, registration context, timelines, voting day flow, and result reporting in a neutral, public-facing voice.
-      </p>
+      <div class="home-hero-tags" aria-label="Interface strengths">
+        <span>Process clarity</span>
+        <span>Step-by-step flow</span>
+        <span>Assistant-guided</span>
+      </div>
     </div>
   </div>
 </section>
 
-<section class="section shell-section">
+<section class="section shell-section home-band">
   <div class="container">
     <div class="assistant-entry reveal">
       <div class="assistant-entry-copy">
         <p class="eyebrow">Assistant Entry</p>
-        <h2 class="section-heading">How would you like to begin?</h2>
-        <p class="section-copy">Ask a question, choose a response style, or begin from a guided topic without losing the formal structure of the platform.</p>
+        <h2 class="section-heading">Ask the assistant.</h2>
       </div>
       <div class="assistant-entry-actions">
-        <a class="button-primary" href="{{ url_for('assistant_page') }}">Open Assistant</a>
+        <form class="assistant-form" action="{{ url_for('assistant_page') }}" method="get">
+          <input type="hidden" name="topic" value="overview">
+          <label class="control-label" for="home-assistant-input">Your question</label>
+          <div class="input-row">
+            <input
+              id="home-assistant-input"
+              name="question"
+              type="text"
+              autocomplete="off"
+              placeholder="What do you want to understand?"
+            >
+            <button class="button-primary button-submit" type="submit">Ask</button>
+          </div>
+        </form>
         <div class="topic-chip-row">
-          <a class="chip" href="{{ url_for('assistant_page', topic='overview', question='What is the election process?') }}">Election Overview</a>
-          <a class="chip" href="{{ url_for('assistant_page', topic='stages', question='Explain the election stages one by one') }}">Process Stages</a>
+          <a class="chip" href="{{ url_for('assistant_page', topic='overview', question='What is the election process?') }}">What is the election process?</a>
+          <a class="chip" href="{{ url_for('assistant_page', topic='voting_day', question='What happens on voting day?') }}">Voting day</a>
+          <a class="chip" href="{{ url_for('assistant_page', topic='results', question='What happens after voting?') }}">After voting</a>
           <a class="chip" href="{{ url_for('assistant_page', topic='timeline', question='Show me the election timeline') }}">Timeline</a>
-          <a class="chip" href="{{ url_for('assistant_page', topic='voting_day', question='What happens on voting day?') }}">Voting Day</a>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="section">
+<section class="section home-start-section">
+  <div class="container">
+    <p class="eyebrow">Start Options</p>
+    <h2 class="section-heading">How would you like to begin?</h2>
+    <div class="quick-grid">
+      <a class="quick-card entry-card reveal" href="{{ url_for('assistant_page', topic='faq', question='Explain the election process simply') }}">
+        <span class="entry-label">Entry Mode</span>
+        <span class="stage-index">01</span>
+        <span class="card-meta">First-time understanding</span>
+        <h3>Start Simple</h3>
+        <span class="entry-micro">Begin here</span>
+      </a>
+      <a class="quick-card entry-card reveal delay-1" href="{{ url_for('assistant_page', topic='stages', question='Explain the election stages one by one') }}">
+        <span class="entry-label">Entry Mode</span>
+        <span class="stage-index">02</span>
+        <span class="card-meta">Step-by-step learning</span>
+        <h3>Follow the Stages</h3>
+        <span class="entry-micro">Begin here</span>
+      </a>
+      <a class="quick-card entry-card reveal delay-2" href="{{ url_for('timeline_page') }}">
+        <span class="entry-label">Entry Mode</span>
+        <span class="stage-index">03</span>
+        <span class="card-meta">Timeline</span>
+        <h3>View the Order</h3>
+        <span class="entry-micro">Begin here</span>
+      </a>
+      <a class="quick-card entry-card reveal delay-3" href="{{ url_for('assistant_page') }}">
+        <span class="entry-label">Entry Mode</span>
+        <span class="stage-index">04</span>
+        <span class="card-meta">Ask question</span>
+        <h3>Use the Assistant</h3>
+        <span class="entry-micro">Begin here</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="section home-glance-section">
+  <div class="container">
+    <div class="at-glance-panel reveal">
+      <div class="glance-list">
+        <span><strong>Overview</strong> Full process understanding</span>
+        <span><strong>Stages</strong> Step-by-step structure</span>
+        <span><strong>Timeline</strong> Ordered sequence</span>
+      </div>
+      <p>Choose a path or enter through the assistant.</p>
+    </div>
+  </div>
+</section>
+
+<section class="section home-band">
+  <div class="container">
+    <p class="eyebrow">Learning Paths</p>
+    <div class="quick-grid">
+      <a class="quick-card reveal" href="{{ url_for('paths_page') }}">
+        <span class="stage-index">01</span>
+        <span class="card-meta">Guided tracks</span>
+        <h3>Learning Paths</h3>
+      </a>
+      <a class="quick-card reveal delay-1" href="{{ url_for('stages_page') }}">
+        <span class="stage-index">02</span>
+        <span class="card-meta">Process</span>
+        <h3>Stages</h3>
+      </a>
+      <a class="quick-card reveal delay-2" href="{{ url_for('timeline_page') }}">
+        <span class="stage-index">03</span>
+        <span class="card-meta">Chronology</span>
+        <h3>Timeline</h3>
+      </a>
+      <a class="quick-card reveal delay-3" href="{{ url_for('faq_page') }}">
+        <span class="stage-index">04</span>
+        <span class="card-meta">Questions</span>
+        <h3>FAQ</h3>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="section home-questions-section">
   <div class="container">
     <div class="common-questions">
-      <h3>Common Questions People Have</h3>
+      <h3>Common Questions</h3>
       <button onclick="askQuestion('Am I eligible to vote?', 'registration')">Am I eligible to vote?</button>
       <button onclick="askQuestion('What happens before voting day?', 'registration')">Before voting day</button>
       <button onclick="askQuestion('What happens after voting?', 'results')">After voting</button>
@@ -110,60 +151,13 @@
     </div>
   </div>
 </section>
-
-<section class="section">
-  <div class="container">
-    <p class="eyebrow">Quick Access</p>
-    <h2 class="section-heading">Move directly into the area you need.</h2>
-    <div class="quick-grid">
-      <a class="quick-card reveal" href="{{ url_for('assistant_page') }}">
-        <span class="stage-index">01</span>
-        <span class="card-meta">Interactive</span>
-        <h3>Assistant</h3>
-        <p>Ask focused questions and receive structured follow-up guidance.</p>
-      </a>
-      <a class="quick-card reveal delay-1" href="{{ url_for('paths_page') }}">
-        <span class="stage-index">02</span>
-        <span class="card-meta">Guided tracks</span>
-        <h3>Learning Paths</h3>
-        <p>Choose a formal entry route into overview, stages, voting day, or results.</p>
-      </a>
-      <a class="quick-card reveal delay-2" href="{{ url_for('stages_page') }}">
-        <span class="stage-index">03</span>
-        <span class="card-meta">Procedural</span>
-        <h3>Stages</h3>
-        <p>Review the election sequence in an ordered civic format.</p>
-      </a>
-      <a class="quick-card reveal delay-3" href="{{ url_for('timeline_page') }}">
-        <span class="stage-index">04</span>
-        <span class="card-meta">Chronology</span>
-        <h3>Timeline</h3>
-        <p>See how phases typically unfold from preparation to final reporting.</p>
-      </a>
-      <a class="quick-card reveal delay-3" href="{{ url_for('faq_page') }}">
-        <span class="stage-index">05</span>
-        <span class="card-meta">Clarifications</span>
-        <h3>FAQ</h3>
-        <p>Read concise answers to common public questions and confusion points.</p>
-      </a>
-    </div>
-  </div>
-</section>
-
-<section class="section recap-section">
-  <div class="container">
-    <div class="preview-band reveal">
-      <div>
-        <p class="eyebrow">Public Use</p>
-        <h2>One civic product, multiple ways to learn.</h2>
-        <p>The homepage serves as a gateway. Deeper explanatory material lives in dedicated pages so the experience stays composed and easy to navigate.</p>
-      </div>
-      <a class="button-ghost" href="{{ url_for('paths_page') }}">Browse Learning Paths</a>
-    </div>
-  </div>
-</section>
 {% endblock %}
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='script.js') }}"></script>
+<script>
+  document.querySelector(".footer-mark")?.remove();
+  document.querySelector(".footer-copy")?.remove();
+  document.querySelector(".footer-links")?.remove();
+</script>
 {% endblock %}

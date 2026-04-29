@@ -196,7 +196,16 @@ if (assistantForm) {
     updateLearningProgress(data.progress || {});
     updateVisitedTopics(data.visited_topics || [], data.suggested_next_topic || "");
     updateTopicSelection(data.topic || currentTopic);
-    responseCard.scrollIntoView({ behavior: "smooth", block: "start" });
+    scrollToResponseTop();
+  }
+
+  function scrollToResponseTop() {
+    requestAnimationFrame(() => {
+      responseCard.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
   }
 
   function setSuggestionLoadingState(isLoading) {
@@ -254,7 +263,6 @@ if (assistantForm) {
       </div>
     `;
     setSuggestionLoadingState(true);
-    responseCard.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   async function submitQuestion(question, topic = currentTopic, explainLikeNew = false, interactionSource = "manual") {
