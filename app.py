@@ -12,6 +12,7 @@ def create_app() -> Flask:
     app.config["SECRET_KEY"] = os.getenv("FLASK_SECRET_KEY", "election-compass-dev-secret")
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    app.config["GOOGLE_ANALYTICS_ID"] = os.getenv("GOOGLE_ANALYTICS_ID", "").strip()
 
     TOPIC_GUIDES = {
         "overview": {
@@ -730,7 +731,13 @@ def create_app() -> Flask:
     def render_page(template_name: str, active_page: str, **context):
         initialize_session_state()
         today = datetime.utcnow().strftime("%b %d, %Y")
-        return render_template(template_name, today=today, active_page=active_page, **context)
+        return render_template(
+            template_name,
+            today=today,
+            active_page=active_page,
+            google_analytics_id=app.config["GOOGLE_ANALYTICS_ID"],
+            **context,
+        )
 
     @app.route("/")
     def index():
@@ -765,6 +772,7 @@ def create_app() -> Flask:
     def faq_page():
         return render_page("faq.html", "faq", faq_items=FAQ_ITEMS)
 
+    @app.route("/ask", methods=["POST"])
     @app.route("/api/assistant", methods=["POST"])
     def assistant_api():
         initialize_session_state()
