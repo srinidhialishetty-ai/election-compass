@@ -3,8 +3,18 @@ import os
 import re
 from datetime import datetime
 
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
 import requests
 from flask import Flask, jsonify, render_template, request, session
+
+if genai:
+    genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+    model = genai.GenerativeModel("gemini-pro")
+else:
+    model = None
 
 
 def create_app() -> Flask:
@@ -536,44 +546,43 @@ def create_app() -> Flask:
         )
 
     def call_gemini(question: str, topic: str, mode: str, style: str, interaction_source: str) -> dict:
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
+        if not os.getenv("GEMINI_API_KEY") or model is None:
             raise RuntimeError("Missing GEMINI_API_KEY")
 
-        endpoint = (
-            "https://generativelanguage.googleapis.com/v1beta/models/"
-            "gemini-2.5-flash:generateContent"
-        )
-        headers = {
-            "Content-Type": "application/json",
-            "x-goog-api-key": api_key,
-        }
-        payload = {
-            "system_instruction": {
-                "parts": [{"text": build_system_prompt()}],
-            },
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [{"text": build_user_prompt(question, topic, mode, style, interaction_source)}],
-                }
-            ],
-            "generationConfig": {
-                "temperature": 0.5,
-                "maxOutputTokens": 900,
-                "responseMimeType": "application/json",
-            },
-        }
+        user_input = question
+        prompt = f"""
+Explain the election process topic clearly.
 
-        response = requests.post(endpoint, headers=headers, json=payload, timeout=20)
-        response.raise_for_status()
-        data = response.json()
-        text = extract_text_from_gemini(data)
-        parsed = parse_model_json(text, mode, style)
-        if not parsed:
-            raise ValueError("Gemini response was not valid JSON")
+User question: {user_input}
 
-        return parsed
+Response style: {style}
+
+Give structured, clear explanation.
+"""
+        response = model.generate_content(prompt)
+        response_text = str(getattr(response, "text", "")).strip()
+        if not response_text:
+            raise ValueError("Gemini response was empty")
+
+        progress, visited_topics = mark_topic_visit(topic)
+        suggestions = SUGGESTED_QUESTIONS.get(topic, SUGGESTED_QUESTIONS["overview"])[:4]
+        result = {
+            "heading": TOPIC_GUIDES[topic]["title"],
+            "answer": response_text,
+            "response": response_text,
+            "bullets": [],
+            "clarification": "Exact dates, deadlines, and requirements can vary by official election authority.",
+            "example": None,
+            "topic": topic,
+            "recommended_section": SECTION_MAP.get(topic, "assistant"),
+            "suggestions": suggestions,
+            "progress": progress,
+            "visited_topics": visited_topics,
+            "suggested_next_topic": get_suggested_next_topic(visited_topics),
+            "used_fallback": False,
+            "source": "gemini",
+        }
+        return result
 
     def extract_text_from_gemini(payload: dict) -> str:
         candidates = payload.get("candidates") or []
@@ -730,7 +739,8 @@ def create_app() -> Flask:
 
     def render_page(template_name: str, active_page: str, **context):
         initialize_session_state()
-        today = datetime.utcnow().strftime("%b %d, %Y")
+        from datetime import datetime, timezone
+        today = datetime.now(timezone.utc).strftime("%b %d, %Y")
         return render_template(
             template_name,
             today=today,
@@ -856,6 +866,7 @@ def create_app() -> Flask:
             result = call_gemini(question, topic, mode, style, interaction_source)
         except Exception:
             result = build_local_answer(question, topic, mode, style, interaction_source, last_topic)
+            result["response"] = result.get("answer", "")
 
         session["progress"] = result["progress"]
         history.append(
