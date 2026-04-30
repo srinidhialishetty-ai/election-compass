@@ -7,14 +7,10 @@ try:
     import google.generativeai as genai
 except ImportError:
     genai = None
-import requests
 from flask import Flask, jsonify, render_template, request, session
 
-if genai:
-    genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
-    model = genai.GenerativeModel("gemini-pro")
-else:
-    model = None
+model = None
+GEMINI_MODEL_NAME = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 
 
 def create_app() -> Flask:
@@ -411,6 +407,41 @@ def create_app() -> Flask:
             for index, detail in enumerate(guide["details"])
         )
 
+    def build_timeline_response(topic: str) -> str:
+        guide = TOPIC_GUIDES.get(topic, TOPIC_GUIDES["overview"])
+        phases = [
+            "Phase 1 - Preparation: authorities set rules, dates, and logistics.",
+            "Phase 2 - Registration: eligible voters confirm details before deadlines.",
+            "Phase 3 - Public information: voters review official guidance and choices.",
+            "Phase 4 - Voting day: ballots are cast through the approved process.",
+            "Phase 5 - Counting and results: ballots are counted, reported, and confirmed.",
+        ]
+        if topic == "results":
+            phases = [
+                "Phase 1 - Voting closes: no more ballots are accepted under the official process.",
+                "Phase 2 - Counting begins: ballots are reviewed and counted carefully.",
+                "Phase 3 - Reporting: preliminary or official updates are shared.",
+                "Phase 4 - Verification: required checks are completed.",
+                "Phase 5 - Confirmation: the final result is certified by the relevant authority.",
+            ]
+        return f"{guide['title']} timeline:\n" + "\n".join(phases)
+
+    def strip_numbering(text: str) -> str:
+        return re.sub(r"^\s*(?:step\s*)?\d+[\).:\-]\s*", "", text, flags=re.IGNORECASE).strip()
+
+    def split_into_sentences(text: str) -> list[str]:
+        cleaned = re.sub(r"\s+", " ", text or "").strip()
+        if not cleaned:
+            return []
+        sentences = re.split(r"(?<=[.!?])\s+", cleaned)
+        return [strip_numbering(sentence) for sentence in sentences if strip_numbering(sentence)]
+
+    def split_into_items(text: str) -> list[str]:
+        lines = [strip_numbering(line) for line in re.split(r"\n+", text or "") if strip_numbering(line)]
+        if len(lines) >= 2:
+            return lines
+        return split_into_sentences(text)
+
     def build_local_answer(
         question: str,
         topic: str,
@@ -433,14 +464,9 @@ def create_app() -> Flask:
         is_step_by_step = mode == "step"
 
         if effective_style == "timeline":
-            answer = f"{guide['title']} in timeline order:"
-            bullets = [
-                "Preparation establishes the rules, timeline, and logistics.",
-                "Registration and eligibility checks happen before participation.",
-                "Voting day follows the public information phase.",
-                "Counting and reporting continue after ballots are cast.",
-            ]
-            clarification = guide["timeline"]
+            answer = build_timeline_response(topic)
+            bullets = []
+            clarification = ""
         elif is_step_by_step:
             answer = build_step_response(topic)
             bullets = []
@@ -546,39 +572,45 @@ def create_app() -> Flask:
         )
 
     def call_gemini(question: str, topic: str, mode: str, style: str, interaction_source: str) -> dict:
-        if not os.getenv("GEMINI_API_KEY") or model is None:
+        api_key = os.getenv("GEMINI_API_KEY", "").strip()
+        if not api_key or genai is None:
             raise RuntimeError("Missing GEMINI_API_KEY")
 
-        user_input = question
-        prompt = f"""
-Explain the election process topic clearly.
-
-User question: {user_input}
-
-Response style: {style}
-
-Give structured, clear explanation.
-"""
-        response = model.generate_content(prompt)
+        genai.configure(api_key=api_key)
+        active_model = model or genai.GenerativeModel(GEMINI_MODEL_NAME)
+        prompt = f"{build_system_prompt()}\n\n{build_user_prompt(question, topic, mode, style, interaction_source)}"
+        response = active_model.generate_content(prompt)
         response_text = str(getattr(response, "text", "")).strip()
         if not response_text:
             raise ValueError("Gemini response was empty")
 
+        parsed = parse_model_json(response_text, mode, style)
+        if parsed:
+            return parsed
+
         progress, visited_topics = mark_topic_visit(topic)
         suggestions = SUGGESTED_QUESTIONS.get(topic, SUGGESTED_QUESTIONS["overview"])[:4]
+        answer, bullets, clarification = apply_response_style_shape(
+            topic,
+            response_text,
+            [],
+            "Exact dates, deadlines, and requirements can vary by official election authority.",
+            mode,
+            style,
+        )
         result = {
             "heading": TOPIC_GUIDES[topic]["title"],
-            "answer": response_text,
-            "response": response_text,
-            "bullets": [],
-            "clarification": "Exact dates, deadlines, and requirements can vary by official election authority.",
+            "answer": answer,
+            "response": answer,
+            "bullets": bullets,
+            "clarification": clarification,
             "example": None,
             "topic": topic,
             "recommended_section": SECTION_MAP.get(topic, "assistant"),
             "suggestions": suggestions,
             "progress": progress,
             "visited_topics": visited_topics,
-            "suggested_next_topic": get_suggested_next_topic(visited_topics),
+            "suggested_next_topic": suggest_next_topics(topic, visited_topics)[0] if suggest_next_topics(topic, visited_topics) else topic,
             "used_fallback": False,
             "source": "gemini",
         }
@@ -676,19 +708,9 @@ Give structured, clear explanation.
         mode: str,
         style: str,
     ) -> tuple[str, list[str], str]:
-        if style == "timeline":
-            return answer, bullets, clarification
-
         if mode == "step":
-            source_items = bullets or [
-                line.strip()
-                for line in re.split(r"\n+", answer)
-                if line.strip()
-            ] or TOPIC_GUIDES[topic]["details"]
-            clean_items = [
-                re.sub(r"^(?:step\s*)?\d+[\).:\-]\s*", "", item, flags=re.IGNORECASE).strip()
-                for item in source_items
-            ]
+            source_items = bullets or split_into_items(answer) or TOPIC_GUIDES[topic]["details"]
+            clean_items = [strip_numbering(item) for item in source_items]
             numbered = "\n".join(
                 f"{index + 1}. {item}"
                 for index, item in enumerate(clean_items)
@@ -696,13 +718,28 @@ Give structured, clear explanation.
             )
             return numbered, [], ""
 
+        if style == "timeline":
+            return build_timeline_response(topic), [], ""
+
         if style == "detailed":
             paragraphs = [part.strip() for part in re.split(r"\n\s*\n", answer) if part.strip()]
             if len(paragraphs) < 2:
-                paragraphs = [build_detailed_response(topic)]
+                sentences = split_into_sentences(answer)
+                if len(sentences) >= 4:
+                    midpoint = max(2, len(sentences) // 2)
+                    paragraphs = [
+                        " ".join(sentences[:midpoint]),
+                        " ".join(sentences[midpoint:]),
+                    ]
+                else:
+                    paragraphs = [part.strip() for part in build_detailed_response(topic).split("\n\n")]
             return "\n\n".join(paragraphs[:3]), [], ""
 
-        return build_simple_response(topic), [], ""
+        sentences = split_into_sentences(answer)
+        simple_answer = " ".join(sentences[:3])
+        if not simple_answer or len(sentences) < 2:
+            simple_answer = build_simple_response(topic)
+        return simple_answer, [], ""
 
     def normalize_example_text(example: object) -> str | None:
         cleaned = str(example or "").strip()
@@ -804,11 +841,11 @@ Give structured, clear explanation.
         style_aliases = {
             "clear": "simple",
             "clear explanation": "simple",
-            "step-by-step": "detailed",
-            "step_by_step": "detailed",
-            "step by step": "detailed",
         }
         mode = mode_aliases.get(mode, mode)
+        if style in mode_aliases:
+            mode = mode_aliases[style]
+            style = "simple"
         style = style_aliases.get(style, style)
 
         if mode not in {"quick", "step", "ask"}:
